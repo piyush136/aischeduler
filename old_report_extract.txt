@@ -1,0 +1,641 @@
+PAGES=17
+
+
+===== PAGE 1 =====
+ 
+                                                                              
+Project Report 
+on 
+ 
+AI- Personal Task Manager 
+Submitted in partial fulfillment of the requirements for the award of the 
+degree of 
+ 
+BACHELOR OF TECHNOLOGY 
+in 
+ 
+COMPUTER SCIENCE AND ENGINEERING 
+by 
+ 
+Siddharth Kumar 22030440039 
+Shavi Ramotra 22030440034 
+Vikash Kumar                                22030440044 
+ Piyush Rai  22030440022 
+ 
+Under the 
+supervision of 
+Prof. Vijay Kumar Besra 
+Assistant Professor 
+Department of Information Technology 
+ 
+ 
+Department of Computer Science And Engineering 
+BIT Sindri 
+Dhanbad, 
+Jharkhand PIN-
+828123
+
+
+===== PAGE 2 =====
+I 
+                                                                              
+ 
+ 
+ 
+ABSTRACT 
+This project presents the design and implementation of an AI Personal Task Manager that 
+integrates a modern web -based user interface with intelligent conversational capabilities 
+to simplify how users manage their daily tasks and schedules. The system combi nes a 
+React-based frontend, a Node.js and Express backend with MongoDB for persistent data 
+storage, and an AI  layer implemented using the Model Context Protocol (MCP). Unlike 
+traditional task management applications that rely heavily on rigid , form -based inputs, 
+this system allows users to create, update, and manage tasks using natural -language 
+instructions, thereby making task management more intuitive and user -friendly. Users 
+can interact with the system through both a graphical interface an d a chat-based assistant. 
+Natural-language inputs such as requests to schedule tasks, set reminders, or list 
+upcoming deadlines are interpreted by a large language model and converted into 
+structured task data containing attributes such as task title, desc ription, due date, priority, 
+and reminder time. The backend exposes RESTful APIs for secure user authentication, 
+task creation and modification, Google Calendar synchronization, and background 
+reminder scheduling. The AI  layer safely bridges the conversational interface with 
+backend services by exposing application functionalities as well -defined tools.  The 
+frontend provides a responsive and visually organized dashboard with multiple task 
+views including inbox, today, upcoming, completed, and calendar views, allowing users 
+to easily visualize and manage their responsibilities. Background scheduling ensures that 
+reminders are processed at appropriate times, helping users avoid missed deadlines. By 
+embedding artificial intelligence directly into the core workflow, the proposed system 
+reduces manual effort, minimizes cognitive load, and offers a more natural and efficient 
+approach to task management, particularly suited for students and professionals handling 
+multiple responsibilities. 
+Keywords: 
+AI Personal Task Manager, Natural Language Processing (NLP), Conversational 
+Chatbot, Task Scheduling, Model Context Protocol (MCP), Google Calendar Integration, 
+Node.js, React.js, MongoDB, Intelligent Automation, Reminder System, Productivity 
+Tools 
+ 
+
+
+===== PAGE 3 =====
+II 
+ 
+ 
+ 
+ 
+TABLE OF CONTENTS 
+ 
+ 
+Abstract                                                                                              I 
+ 
+Chapter 1: Introduction                                                                      1-2   
+1.1 Background and Motivation 
+1.2 Problem Statement 
+1.3 Objectives of the Project 
+1.4 Scope and Limitations 
+1.5 Organization of the Report 
+ 
+Chapter 2: Literature Review                                                             3-4 
+2.1 Introduction 
+2.2 Review of Existing Approaches 
+2.3 Comparative Analysis of Existing Approaches 
+2.4 Research Gap Identification 
+2.5 Summary 
+ 
+Chapter 3: Applied Methodology                                                       5-6 
+3.1 Overview of Applied System 
+3.2 System Architecture 
+3.3 Tools and Technologies 
+3.4 Algorithm/Process Flow 
+3.5 Implementation Approach 
+ 
+Chapter 4: Experimental Layout/Design                                             7-9 
+4.1 Hardware/Software Requirements 
+4.2 System Design 
+4.3 Experimental Setup 
+4.4 Data Collection and Preprocessing 
+4.5 Test Cases 
+4.6 Performance Metrics/Evaluation Parameters 
+ 
+Chapter 5: Results                                                                                10-11 
+5.1 Testing Results 
+5.2 Observations and Analysis  
+5.3 Challenges Faced and Solutions 
+ 
+Chapter 6: Work Progress and Future Plan                                         12-13 
+6.1 Completed Tasks 
+6.2 Ongoing Work 
+6.3 Revised Timeline (Gantt Chart) 
+6.4 Next Phase Activities     
+       References                                                                                            14
+
+
+===== PAGE 4 =====
+1 
+ 
+INTRODUCTION 
+1.1 Background and Motivation 
+In modern academic and professional life, managing tasks and deadlines efficiently has 
+become increasingly important. Students and professionals rely on digital tools such as to -do 
+list applications and calendars to organize their responsibilities. However, most existing tas k 
+management systems depend on rigid, form -based inputs, which require users to manually 
+enter details such as task titles, dates, and reminders. This process often disrupts workflow 
+and increases mental effort. With recent advances in artificial intellige nce and natural -
+language processing, it is now possible to design systems that understand conversational 
+instructions. The motivation for this project is to bridge the gap between natural human 
+communication and traditional task management software by enab ling users to manage tasks 
+in a more intuitive and conversational manner. 
+Key motivations of the project are: 
+ To reduce the effort required for manual task entry 
+ To allow users to express tasks in natural language 
+ To improve usability and accessibility of task management tools 
+ To leverage AI for smarter scheduling and reminders 
+ 
+1.2 Problem Statement 
+Traditional task management systems rely on rigid, form -based inputs that make task entry 
+inefficient and error-prone, often leading to missed deadlines and poor organization. 
+An AI -driven solution is required to understand natural -language instructions and provide 
+intelligent scheduling, reminders, and calendar integration. 
+The major problems identified are: 
+ Rigid form-based task creation 
+ Limited understanding of complex natural-language inputs 
+ Basic and inflexible reminder mechanisms 
+ Inconsistent synchronization with external calendars 
+ 
+ 
+ 
+1.3 Objectives of the Project 
+The primary objective of this project is to develop an AI Personal Task Manager  that allows 
+users to manage tasks using both a graphical interface and a conversational assistant. The 
+
+
+===== PAGE 5 =====
+2 
+ 
+system aims to simplify task creation, improve organization, and ensure timely reminders by 
+integrating modern web technologies with AI capabilities. 
+The specific objectives of the project include: 
+ To design a secure backend for user authentication and task management 
+ To enable natural-language task creation and updates using an AI assistant 
+ To integrate Google Calendar for unified task and event visualization 
+ To implement background reminder scheduling for timely notifications 
+ To evaluate system functionality and usability through testing 
+ 
+1.4 Scope and Limitations 
+The scope of this project covers the development of a complete web -based task management 
+system, including backend services, an AI orchestration layer, and a frontend user interface. 
+The system supports task management, conversational interaction, calendar synchronization, 
+and reminder scheduling. However, certain limitations exist due to the academic  and 
+prototype nature of the project. 
+The scope and limitations are summarized as follows: 
+ The system supports core task management and conversational interaction 
+ Advanced AI understanding of highly ambiguous inputs may be limited 
+ Notification delivery is simulated rather than implemented via email or telegram 
+ Calendar integration focuses on common use cases only 
+ The system is not optimized for large-scale production deployment 
+ 
+1.5 Organization of the Report 
+This report is structured to present the project  in a clear and systematic manner. It begins 
+with an introduction that outlines the background, problem, objectives, and scope. This is 
+followed by a literature review discussing related work and technologies. The proposed 
+methodology section explains the system architecture and workflow. The system design and 
+experimental layout section describes implementation details and testing. Finally, the report 
+concludes with a discussion of outcomes and future enhancements. 
+ 
+ 
+ 
+ 
+ 
+
+
+===== PAGE 6 =====
+3 
+ 
+LITERATURE REVIEW 
+2.1 Introduction 
+Task management and scheduling systems have evolved significantly with the advancement 
+of digital technologies. Early systems focused mainly on simple lists and reminders, while 
+modern applications provide cloud synchronization, collaboration features, and cal endar 
+integration. Despite these improvements, most existing tools still require manual interaction 
+and offer limited intelligence. Recent developments in artificial intelligence and 
+conversational systems have introduced new possibilities for interacting with productivity 
+tools. This section reviews existing task management systems, AI -based assistants, and the 
+underlying technologies relevant to this project. 
+The literature review focuses on: 
+ Popular task management and calendar applications 
+ AI-powered assistants and conversational interfaces 
+ Web and backend technologies used in productivity systems 
+ 
+2.2 Review of Existing Approaches 
+Several widely used task managem ent applications such as  Google Tasks, and Microsoft To 
+Do provide features for creating, organizing, and prioritizing tasks. Calendar platforms like 
+Google Calendar and Microsoft Outlook support time-based scheduling and recurring events. 
+These systems are reliable and widely adopted, but their interaction models are primarily 
+form-based with limited support for conversational input. 
+On the technology side, Node.js and Express are commonly used for developing scalable 
+backend services, while MongoDB is widely adopted for storing flexible, document -oriented 
+data. React has become a popular front end framework due to its component -based 
+architecture and responsiveness. Recently, large language models and AI orchestration 
+frameworks such as the Model Context Protocol (MCP) have enabled conversational systems 
+to interact with application-specific tools. 
+Key technologies reviewed include: 
+ Traditional task and calendar applications 
+ Backend frameworks such as Node.js and Express 
+ Databases like MongoDB for task persistence 
+ Frontend frameworks such as React 
+ AI assistants and orchestration protocols 
+ 
+
+
+===== PAGE 7 =====
+4 
+ 
+2.3 Comparative Analysis of Existing Approaches 
+Traditional task management systems excel in reliability and structured data handling but 
+require users to adapt to rigid workflows. While some applications support basic natural -
+language input, they often fail to handle complex expressions involving relative dates, 
+recurring tasks, or flexible time constraints. AI assistants such as Siri or Google Assistant can 
+create reminders using voice commands, but their integration with custom task systems is 
+limited and not easily extensible. 
+In contrast, AI-first approaches supported by orchestration frameworks like MCP allow large 
+language models to safely call backend services through well -defined tools. This enables 
+flexible conversational interaction while maintaining co ntrol over application logic. The 
+proposed system adopts this approach to combine the stability of traditional task managers 
+with the flexibility of conversational AI. 
+Comparison highlights the following: 
+ Traditional systems are reliable but rigid 
+ AI assistants are flexible but loosely integrated 
+ MCP-based systems balance flexibility and control 
+ 
+2.4 Research Gap Identification 
+The review of existing systems reveals a clear gap in current task management solutions. 
+Most applications treat conversational AI as an additional feature rather than a core 
+component of the system. There is limited work on deeply integrating natural -language 
+interfaces with persistent task storage, rich web -based dashboards, and external calendar 
+synchronization within a single unified system. 
+The identified research gaps include: 
+ Lack of AI Personal Task Manager 
+ Limited integration between conversational AI and backend services 
+ Inadequate unification of task lists and external calendars 
+ Insufficient support for flexible natural-language scheduling 
+ 
+2.5 Summary 
+This section reviewed existing task management tools, AI assistants, and supporting 
+technologies. While current systems provide strong foundational features, they lack deep 
+conversational integration and flexible AI orchestrati on. The identified research gap justifies 
+the need for an AI Personal Task Manager  that tightly integrates conversational interfaces, 
+backend services, and calendar synchronization, which forms the basis of the proposed 
+approach. 
+
+
+===== PAGE 8 =====
+5 
+ 
+APPLIED METHODOLOGY 
+3.1 Overview of Applied System 
+The proposed system is an AI Personal Task Manager platform designed to allow users to 
+manage tasks through both a modern web interface and a conversational assistant. The 
+system focuses on minimizing manual effort by enabling users to express task -related 
+instructions in natural language. These instructions are in terpreted by an AI  layer and 
+converted into structured backend actions such as task creation, updating, listing, and 
+deletion. The approach emphasizes separation of concerns by dividing responsibilities among 
+the frontend, backend, and AI  components. 
+The proposed approach focuses on: 
+ Conversational task management using natural-language input 
+ Reliable backend persistence and business logic 
+ Clear separation between AI interpretation and application logic 
+ A user-friendly and responsive web interface 
+ 
+3.2 System Architecture 
+The system follows a multi-tier architecture consisting of a backend service, an AI layer, and 
+a frontend client. The backend, implemented using Node.js and Express, handles user 
+authentication, task management, calendar synchronization, and reminder scheduling, while 
+MongoDB is used for persistent da ta storage. The AI  layer is im plemented using an MCP 
+server, which exposes backend functionalities as tools to a large language model. The 
+frontend is developed using React and communicates with both the backend and the MCP 
+server through HTTP APIs. 
+Key architectural components include: 
+ Backend service for authentication, tasks, and reminders 
+ MCP server for AI  and tool execution 
+ React frontend for user interaction and visualization 
+ RESTful communication between all components 
+ 
+3.3 Tools and Technologies 
+The system is devel oped using modern web technologies to ensure scalability, 
+maintainability, and responsiveness. JavaScript is used across all layers of the system, 
+providing consistency in development. The backend leverages Node.js and Express for API 
+handling, while MongoDB provides flexible document-oriented storage. The frontend is built 
+using React and styled with Tailwind CSS. The MCP server enables conversational AI 
+integration, and additional libraries support scheduling and external service integration. 
+
+
+===== PAGE 9 =====
+6 
+ 
+The main tools and technologies used are: 
+ Node.js and Express for backend development 
+ MongoDB and Mongoose for database management 
+ React with Vite for frontend development 
+ Tailwind CSS for responsive UI design 
+ MCP Server 
+ node-cron for reminder scheduling 
+ Google Calendar API for calendar integration 
+ 
+3.4 Algorithm/Process Flow 
+The system operates through a sequence of well -defined steps that coordinate user 
+interaction, AI interpretation, and backend processing. Users authenticate through the 
+frontend and interact with the system either via graphical components or the chat -based 
+assistant. Natural -language inputs are sent to the AI  layer, where the language model 
+identifies the user’s intent and selects appropriate tools. These to ols invoke backend APIs to 
+perform task operations, store data in the database, and schedule reminders. The results are 
+then reflected back in the user interface. 
+The overall process flow includes: 
+ User authentication and session management 
+ Task interaction through UI or conversational input 
+ AI interpretation of natural-language commands 
+ Backend execution of task and reminder operations 
+ UI update with latest task and calendar data 
+ 
+3.5 Implementation Approach 
+The implementation of the system is carrie d out in structured phases to ensure systematic 
+development and testing. The process begins with setting up the backend foundation, 
+followed by frontend development and integration. The AI orchestration layer is then 
+implemented and connected to backend services.  
+The implementation plan includes: 
+ Backend setup with authentication and task APIs 
+ Frontend development with dashboard and task views 
+ MCP server setup and AI assistant integration 
+ Calendar synchronization and final testing 
+
+
+===== PAGE 10 =====
+7 
+ 
+EXPERIMENTAL LAYOUT / DESIGN 
+4.1 Hardware/Software Requirements 
+The development and testing of the proposed AI Personal Task Manager  require a standard 
+computing environment capable of running multiple services simultaneously, including the 
+backend server, AI orchestration server, frontend client, and database. A typical development 
+machine with moderate processing power and memory is sufficient for this purpose. On the 
+software side, modern development tools and runtime environments are necessary to ensure 
+smooth execution and testing of the system. 
+The hardware and software requirements are as follows: 
+ A computer or laptop with a multi-core processor and at least 8 GB RAM 
+ Any modern operating system such as Windows, Linux, or macOS 
+ Node.js runtime with npm package manager 
+ MongoDB (local installation or cloud-based instance) 
+ A modern web browser such as Chrome or Firefox 
+ Development tools such as Visual Studio Code and Git 
+ 
+4.2 System Design 
+The system design divides the application into logical components across the backend, AI  
+layer, and frontend. The backend handles API requests, authentication, task persistence, 
+reminder scheduling, and calendar i ntegration. The A I layer interprets natural -language 
+commands and invokes backend services through defin ed tools. The frontend provides an 
+interactive dashboard for users to view and manage tasks, interact with the AI assistant, and 
+visualize calendar data. 
+The system design includes the following components: 
+ API layer for authentication and task management 
+ Database layer for storing users, tasks, and reminders 
+ AI layer for conversational interaction 
+ Frontend components for task lists, calendar view, and chat interface 
+ 
+4.3 Experimental Setup 
+To validate the functionality of the system, a contro lled experimental setup is use d. The 
+backend, AI server, and frontend are run locally or on a development environment. Test user 
+accounts are created, and sample tasks with varying due dates, priorities, and reminders are 
+added. The system is  tested through both the graphical interface and the conversational 
+assistant to ensure that task operations behave as expected. 
+The experimental setup involves: 
+
+
+===== PAGE 11 =====
+8 
+ 
+ Configuration of environment variables and service ports 
+ Creation of test users and sample task data 
+ Interaction with the system via UI and chat assistant 
+ Verification of reminder scheduling and calendar synchronization 
+ 
+4.4 Data Collection  
+Data collection in this project focuses on user task activity and interaction patterns . The 
+system re cords when users create, update, complete, or schedule tasks to analyze usage 
+behavior and validate system functionality. 
+Data is collected through backend and MCP server logs, stored task and reminder records, 
+and chat interactions with the AI assistant. Functional testing observations are also used to 
+ensure accurate AI interpretation and correct task execution. 
+ 
+4.5 Test Cases 
+To validate the correctness and reliability of the AI Personal Task Manager, multiple test 
+cases were designed covering both graphical and conversational interactions. These test cases 
+ensure that the system correctly interprets user input, performs backend operations, and 
+updates the user interface accordingly. 
+The primary test cases include: 
+ Creating a task using natural-language input via the chat assistant 
+ Updating an existing task through conversational commands 
+ Deleting a task using both UI controls and chat instructions 
+ Fetching today’s tasks and upcoming tasks 
+ Handling incomplete or ambiguous natural -language inputs by requesting 
+clarification 
+ Verifying Google Calendar synchronization for created and updated tasks 
+Each test case was executed un der controlled conditions, and the system responses were 
+compared against expected outcomes to ensure correctness. 
+ 
+4.6 Performance Metrics / Evaluation Parameters 
+The performance of the system was evaluated using qualit ative and functional parameters 
+rather than raw computational benchmarks, as the project focuses on usability and 
+correctness. 
+The evaluation parameters include: 
+
+
+===== PAGE 12 =====
+9 
+ 
+ Response Accuracy: Correct interpretation of user intent from natural-language input 
+ Response Time: Time taken to process chat input and generate a response 
+ Task Execution Success Rate: Percentage of successfully created, updated, or deleted 
+tasks 
+ System Stability: Ability to handle multiple interactions without failure 
+ Usability: Ease of use and naturalness of interaction from a user’s perspective 
+The system demonstrated consistent and reliable performance during testing, with acceptable 
+response times and accurate task handling. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+
+===== PAGE 13 =====
+10 
+ 
+RESULTS 
+5.1 Testing Results 
+The testing phase confirmed tha t the AI Personal Task Manager operates as intended across 
+all major functionalities. Natural -language task creation and modification were handled 
+accurately by the AI assistant, and backend services executed the corresponding operations 
+without errors. 
+Key testing results include: 
+ Successful creation of tasks via conversational input 
+ Correct identification of missing details and follow-up questioning by the chatbot 
+ Reliable storage and retrieval of tasks from MongoDB 
+ Proper synchronization with Google Calendar for scheduled tasks 
+ Stable reminder scheduling and execution logic 
+Overall, the system met all functional requirements defined in the project objectives. 
+ 
+5.2 Observations and Analysis 
+During testing, several import ant observations were made. The conversational interface 
+significantly reduced the effort required for task creation compared to traditional form -based 
+input. Users were able to express tasks naturally, and the AI assistant handled most common 
+scheduling expressions effectively. 
+Analysis of system behaviour showed that: 
+ Conversational interaction improved user engagement 
+ Separation of AI interpretation and backend logic improved maintainability 
+ MCP-based controlled and safe execution of AI-generated actions 
+These observations validate the effectiveness of an AI -first design approach for task 
+management systems. 
+ 
+5.3 Challenges Faced and Solutions 
+Several challenges were encountered during development and testing, primarily due to the 
+integration of multiple technologies. 
+Challenge 1: Handling incomplete user input 
+ Solution: Implemented conversational follow-up logic allowing the chatbot to ask for 
+missing details naturally. 
+
+
+===== PAGE 14 =====
+11 
+ 
+Challenge 2: AI output consistency 
+ Solution: Enforced strict output formatting and validation before backend execution. 
+Challenge 3: Calendar synchronization complexity 
+ Solution: Limited calendar integration to essential use cases and implemented error 
+handling for edge cases. 
+Challenge 4: Managing AI and backend separation 
+ Solution: Used MCP to expose backend capabilities as tools, ensuring clean 
+separation of concerns. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+
+===== PAGE 15 =====
+12 
+ 
+WORK PROGRESS AND FUTURE PLAN 
+ 
+ 
+6.1 Completed Tasks 
+The following major tasks have been successfully completed: 
+ Design of system architecture and workflow 
+ Implementation of backend REST APIs 
+ Integration of MongoDB for persistent storage 
+ Development of conversational AI assistant 
+ MCP server setup 
+ Frontend dashboard and chat interface 
+ Basic Google Calendar integration 
+ Functional testing and validation 
+ 
+6.2 Ongoing Work 
+Although the core system is functional, some activities remain ongoing: 
+ Refinement of conversational responses 
+ Improved handling of ambiguous natural-language inputs 
+ Enhanced UI responsiveness and visual polish 
+ Additional testing for edge cases 
+ 
+6.3 Revised Timeline (Gantt Chart) 
+ 
+                              TABLE 6.3- OUR WORK PLAN    
+ Week 1 Week 2 Week 3 Week 4 Week 5 Week 6 Week 7 
+Basic Structure 
+and System 
+Design 
+       
+REST API 
+Development 
+       
+User Interface 
+Creation 
+       
+LLM Integration 
+and MCP Server 
+Implementation 
+       
+Testing and 
+Validation 
+       
+
+
+===== PAGE 16 =====
+13 
+ 
+ 
+6.4 Next Phase Activities 
+Future development phases will focus on extending system capabilities and improving 
+robustness. Planned activities include: 
+ Advanced reminder delivery mechanisms 
+ Improved AI context handling and memory 
+ Expanded calendar conflict resolution 
+ Performance optimization 
+ Preparation for potential production deployment 
+ 
+ 
+  
+
+
+===== PAGE 17 =====
+14 
+ 
+REFERENCE 
+1. R. Fielding, “Architectural styles and the design of network -based software 
+architectures,” Ph.D. dissertation, Dept. Inf. Comput. Sci., Univ. of California, Irvine, 
+USA, 2000. 
+2. J. Dean and S. Ghemawat, “MapReduce: Simplified data processing on large 
+clusters,” Communications of the ACM, vol. 51, no. 1, pp. 107–113, 2008. 
+3. T. Brown et al., “Language models are few -shot learners,” Advances in Neural 
+Information Processing Systems (NeurIPS), vol. 33, pp. 1877–1901, 2020. 
+4. Anthropic, “Model Context Protocol (MCP): Secure AI tool orchestration,” Technical 
+White Paper, 2024. 
+5. Node.js Foundation, “Node.js: JavaScript runtime built on Chrome’s V8 engine,” 
+Node.js Documentation, 2024. 
+6. Express.js Team, “Express.js: Fast, unopinionated, minimalist web framework for 
+Node.js,” Express Documentation, 2024. 
+7. MongoDB Inc., “MongoDB: A document -oriented NoSQL database,” MongoDB 
+Documentation, 2024. 
+8. Meta Platforms Inc., “React: A JavaScript library for building user interfaces,” React 
+Documentation, 2024. 
+9. Google LLC, “Google Calendar API: Developer guide and integration,” Google 
+Developers Documentation, 2024. 
+ 

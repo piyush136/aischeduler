@@ -1,136 +1,221 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const axios = require('axios');
 
-// Initialize Gemini
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY);
+const apiKey = process.env.GEMINI_API_KEY;
+if (!apiKey) {
+  console.error('[LLM] ERROR: GEMINI_API_KEY is not set in environment variables');
+  throw new Error('GEMINI_API_KEY is required');
+}
 
 class LLMClient {
   constructor() {
-    this.chatHistory = []; // Maintain conversation history
+    this.chatHistory = [];
+    this.geminiHistory = [];
+    this.activeTools = [];
+    this.systemPrompt = '';
   }
 
-  // Convert history format from OpenAI format to Gemini format
   convertHistoryToGemini(history) {
     return history.map(msg => {
-      if (msg.role === 'system') {
-        // Gemini doesn't support system messages directly, so we'll prepend to user messages
-        return null; // Filter these out
-      }
+      if (msg.role === 'system') return null;
+
       if (msg.role === 'assistant') {
-        return {
-          role: 'model',
-          parts: [{ text: msg.content || '' }]
-        };
+        const parts = [];
+        if (msg.content) parts.push({ text: msg.content });
+        if (msg.functionCall) {
+          parts.push({
+            functionCall: {
+              name: msg.functionCall.name,
+              args: msg.functionCall.arguments || {}
+            }
+          });
+        }
+        if (parts.length === 0) parts.push({ text: '...' });
+        return { role: 'model', parts };
       }
+
       if (msg.role === 'user') {
         return {
           role: 'user',
           parts: [{ text: msg.content || '' }]
         };
       }
+
       return null;
-    }).filter(msg => msg !== null);
+    }).filter(Boolean);
   }
 
-  // Convert Gemini function calls to our format
-  convertGeminiFunctionCall(functionCall) {
-    if (!functionCall || !functionCall.name) return null;
-    
-    return {
-      name: functionCall.name,
-      arguments: functionCall.args || {},
-      id: functionCall.name // Gemini doesn't provide IDs, so we use the name
-    };
-  }
+  normalizeFunctionCall(functionCall) {
+    if (!functionCall?.name) return null;
 
-  async run({ message, tools, history = [], systemPrompt }) {
-    console.log('[LLM] Processing message via Gemini API');
-    
-    // Get or create model
-    const model = genAI.getGenerativeModel({ 
-      model: process.env.GEMINI_MODEL || 'gemini-1.0-pro',
-    });
-
-    // Format tools for Gemini API (function declarations)
-    const functionDeclarations = tools.map(tool => ({
-      name: tool.name,
-      description: tool.description,
-      parameters: {
-        type: tool.parameters.type || 'object',
-        properties: tool.parameters.properties || {},
-        required: tool.parameters.required || []
-      }
-    }));
-
-    // Merge external history with internal history
-    const allHistory = [...this.chatHistory, ...history];
-    
-    // Convert history to Gemini format
-    let geminiHistory = this.convertHistoryToGemini(allHistory);
-
-    // Ensure history doesn't start with 'model' role (Gemini requirement: must start with 'user')
-    if (geminiHistory.length > 0 && geminiHistory[0].role === 'model') {
-      // Remove leading model messages until we find a user message or reach the end
-      while (geminiHistory.length > 0 && geminiHistory[0].role === 'model') {
-        geminiHistory = geminiHistory.slice(1);
+    let args = functionCall.args || functionCall.arguments || {};
+    if (typeof args === 'string') {
+      try {
+        args = JSON.parse(args);
+      } catch (error) {
+        args = { raw: args };
       }
     }
 
-    // Start chat with history (without systemInstruction to avoid API errors)
-    const chat = model.startChat({
-      history: geminiHistory.length > 0 ? geminiHistory : [],
-      tools: functionDeclarations.length > 0 ? [{ functionDeclarations }] : undefined
-    });
+    return {
+      name: functionCall.name,
+      arguments: args,
+      id: functionCall.name
+    };
+  }
+
+  trimLeadingModelMessages(messages) {
+    const trimmed = [...messages];
+    while (trimmed.length > 0 && trimmed[0].role === 'model') {
+      trimmed.shift();
+    }
+    return trimmed;
+  }
+
+  extractToolCallFromText(text) {
+    if (!text) return null;
+
+    const candidates = [];
+    const trimmed = text.trim();
+
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      candidates.push(trimmed);
+    }
+
+    const fencedMatch = trimmed.match(/```(?:json)?\s*([\s\S]+?)```/i);
+    if (fencedMatch?.[1]) {
+      candidates.push(fencedMatch[1].trim());
+    }
+
+    for (const candidate of candidates) {
+      try {
+        const parsed = JSON.parse(candidate);
+        const name = parsed.name || parsed.tool || parsed.function;
+        const args = parsed.arguments || parsed.args || parsed.parameters || {};
+        if (name && this.activeTools.some(tool => tool.name === name)) {
+          return this.normalizeFunctionCall({ name, args });
+        }
+      } catch (error) {
+        continue;
+      }
+    }
+
+    return null;
+  }
+
+  convertGeminiToChatHistory(messages) {
+    const history = [];
+
+    for (const message of messages) {
+      if (!message?.parts?.length) continue;
+
+      if (message.role === 'user') {
+        const functionResponse = message.parts.find(part => part.functionResponse);
+        if (functionResponse) {
+          history.push({
+            role: 'user',
+            content: `Function ${functionResponse.functionResponse.name} returned: ${JSON.stringify(functionResponse.functionResponse.response)}`
+          });
+        } else {
+          history.push({
+            role: 'user',
+            content: message.parts.filter(part => part.text).map(part => part.text).join('\n')
+          });
+        }
+      } else if (message.role === 'model') {
+        const functionCallPart = message.parts.find(part => part.functionCall);
+        history.push({
+          role: 'assistant',
+          content: message.parts.filter(part => part.text).map(part => part.text).join('\n'),
+          functionCall: functionCallPart ? this.normalizeFunctionCall(functionCallPart.functionCall) : undefined
+        });
+      }
+    }
+
+    return history;
+  }
+
+  async generateContent(contents) {
+    const model = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+    const payload = {
+      contents: this.trimLeadingModelMessages(contents)
+    };
+
+    if (this.systemPrompt) {
+      payload.systemInstruction = {
+        parts: [{ text: this.systemPrompt }]
+      };
+    }
+
+    if (this.activeTools.length > 0) {
+      payload.tools = [{
+        functionDeclarations: this.activeTools.map(tool => ({
+          name: tool.name,
+          description: tool.description,
+          parameters: {
+            type: tool.parameters.type || 'object',
+            properties: tool.parameters.properties || {},
+            required: tool.parameters.required || []
+          }
+        }))
+      }];
+    }
+
+    const response = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+      payload,
+      {
+        params: { key: apiKey },
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+
+    const candidates = response.data.candidates || [];
+    if (candidates.length === 0) {
+      throw new Error('No response from Gemini API');
+    }
+
+    const content = candidates[0].content || { role: 'model', parts: [] };
+    const parts = content.parts || [];
+    const text = parts.filter(part => part.text).map(part => part.text).join('\n').trim();
+    const functionCallPart = parts.find(part => part.functionCall);
+    const toolCall = functionCallPart
+      ? this.normalizeFunctionCall(functionCallPart.functionCall)
+      : this.extractToolCallFromText(text);
+
+    return {
+      content: {
+        role: content.role || 'model',
+        parts
+      },
+      text,
+      toolCall
+    };
+  }
+
+  async run({ message, tools = [], history = [], systemPrompt }) {
+    console.log('[LLM] Processing message via Gemini REST API');
+
+    this.activeTools = tools;
+    this.systemPrompt = systemPrompt || '';
+
+    const seedHistory = history.length > 0 ? history : this.chatHistory;
+    const contents = [
+      ...this.convertHistoryToGemini(seedHistory),
+      { role: 'user', parts: [{ text: message }] }
+    ];
 
     try {
-      // Send message directly without enhancement
-      const result = await chat.sendMessage(message);
-      const response = result.response;
-
-      // Update internal history with user message and assistant response
-      this.chatHistory.push({
-        role: 'user',
-        content: message
-      });
-
-      // Check for function calls
-      const functionCalls = response.functionCalls();
-      
-      if (functionCalls && functionCalls.length > 0) {
-        const functionCall = functionCalls[0];
-        const toolCall = this.convertGeminiFunctionCall(functionCall);
-        
-        // Add assistant response with function call to history
-        this.chatHistory.push({
-          role: 'assistant',
-          content: response.text() || '',
-          functionCall: toolCall
-        });
-
-        console.log('[LLM] Function call detected:', toolCall.name);
-        
-        return {
-          text: response.text() || null,
-          toolCall: toolCall
-        };
-      }
-
-      // Handle text response
-      const responseText = response.text();
-      
-      // Add assistant response to history
-      this.chatHistory.push({
-        role: 'assistant',
-        content: responseText
-      });
+      const result = await this.generateContent(contents);
+      this.geminiHistory = [...this.trimLeadingModelMessages(contents), result.content];
+      this.chatHistory = this.convertGeminiToChatHistory(this.geminiHistory);
 
       return {
-        text: responseText,
-        toolCall: null
+        text: result.text || null,
+        toolCall: result.toolCall || null
       };
-
     } catch (error) {
       console.error('[Gemini] Error in run():', error.message);
-      console.error('[Gemini] Error stack:', error.stack);
+      console.error('[Gemini] Error response:', error.response?.data);
       return {
         text: `Error: ${error.message}`,
         toolCall: null
@@ -138,91 +223,51 @@ class LLMClient {
     }
   }
 
-  // Method to clear conversation history
   clearHistory() {
     this.chatHistory = [];
+    this.geminiHistory = [];
+    this.activeTools = [];
+    this.systemPrompt = '';
   }
 
-  // Method to get current history
   getHistory() {
     return this.chatHistory;
   }
 
-  // Method to continue conversation after function execution
   async continueWithFunctionResponse(functionName, functionResult) {
     console.log('[LLM] Continuing conversation with function response');
-    
-    const model = genAI.getGenerativeModel({ 
-      model: process.env.GEMINI_MODEL || 'gemini-1.5-pro',
-    });
 
-    // Convert history to Gemini format
-    let geminiHistory = this.convertHistoryToGemini(this.chatHistory);
-
-    // Ensure history doesn't start with 'model' role (Gemini requirement: must start with 'user')
-    if (geminiHistory.length > 0 && geminiHistory[0].role === 'model') {
-      // Remove leading model messages until we find a user message or reach the end
-      while (geminiHistory.length > 0 && geminiHistory[0].role === 'model') {
-        geminiHistory = geminiHistory.slice(1);
-      }
-    }
-
-    // Start chat with existing history
-    const chat = model.startChat({
-      history: geminiHistory.length > 0 ? geminiHistory : []
-    });
-
-    try {
-      // Send function response in the correct Gemini format
-      // The function response should be sent as a Part with functionResponse
-      const result = await chat.sendMessage({
+    const contents = [
+      ...this.geminiHistory,
+      {
+        role: 'user',
         parts: [{
           functionResponse: {
             name: functionName,
             response: functionResult
           }
         }]
-      });
-      
-      const response = result.response;
-      const responseText = response.text();
+      }
+    ];
 
-      // Update history: add function response (as user message) and model's final response
-      // Add function response to history
-      this.chatHistory.push({
-        role: 'user',
-        content: `Function ${functionName} returned: ${JSON.stringify(functionResult)}`
-      });
-
-      // Add the model's final response
-      this.chatHistory.push({
-        role: 'assistant',
-        content: responseText
-      });
+    try {
+      const result = await this.generateContent(contents);
+      this.geminiHistory = [...this.trimLeadingModelMessages(contents), result.content];
+      this.chatHistory = this.convertGeminiToChatHistory(this.geminiHistory);
 
       return {
-        text: responseText,
-        toolCall: null
+        text: result.text || null,
+        toolCall: result.toolCall || null
       };
-
     } catch (error) {
       console.error('[Gemini] Error in continueWithFunctionResponse:', error.message);
-      console.error('[Gemini] Error stack:', error.stack);
-      // Fallback: return a simple message
-      const fallbackText = `I've executed ${functionName}. ${JSON.stringify(functionResult)}`;
-      
-      // Still update history with fallback
-      this.chatHistory.push({
-        role: 'user',
-        content: `Function ${functionName} returned: ${JSON.stringify(functionResult)}`
-      });
-      this.chatHistory.push({
-        role: 'assistant',
-        content: fallbackText
-      });
-      
+      console.error('[Gemini] Error response:', error.response?.data);
+
+      this.geminiHistory = this.trimLeadingModelMessages(contents);
+      this.chatHistory = this.convertGeminiToChatHistory(this.geminiHistory);
+
       return {
-        text: fallbackText,
+        text: `I executed ${functionName}, but I couldn't finish the follow-up reasoning. Result: ${JSON.stringify(functionResult)}`,
         toolCall: null
       };
     }

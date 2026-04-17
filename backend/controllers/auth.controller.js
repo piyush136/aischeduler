@@ -1,11 +1,17 @@
 const userService = require('../services/user.service');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { OAuth2Client } = require('google-auth-library');
 
 exports.register = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { name, email, password } = req.body;
     
+    // Validate required fields
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: 'Name, email, and password are required' });
+    }
+
     // Check if user exists
     const existing = await userService.findByEmail(email);
     if (existing) {
@@ -16,12 +22,12 @@ exports.register = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const password_hash = await bcrypt.hash(password, salt);
 
-    const user = await userService.create({ email, password_hash });
+    const user = await userService.create({ name, email, password_hash });
     
     // Create token
     const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
-    res.status(201).json({ user, token });
+    res.status(201).json({ user: { id: user.id, name: user.name, email: user.email, created_at: user.created_at }, token });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Registration failed', details: err.message });
@@ -45,12 +51,54 @@ exports.login = async (req, res) => {
     const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
     res.json({ 
-        user: { id: user.id, email: user.email, created_at: user.created_at }, 
+        user: { id: user.id, name: user.name, email: user.email, created_at: user.created_at }, 
         token 
     });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Login failed' });
+  }
+};
+
+exports.googleLogin = async (req, res) => {
+  try {
+    const { token } = req.body;
+    if (!token) {
+      return res.status(400).json({ error: 'No token provided' });
+    }
+
+    // Verify the token with Google
+    // Verify the token with Google
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const { email, name, picture } = payload;
+
+    // Find or create user
+    let user = await userService.findByEmail(email);
+    if (!user) {
+      // Create new user with Google info
+      user = await userService.create({
+        name: name || email.split('@')[0],
+        email,
+        password_hash: null, // Google users don't have passwords
+      });
+    }
+
+    // Create JWT token for our app
+    const appToken = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '7d' });
+
+    res.json({
+      user: { id: user.id, name: user.name, email: user.email, created_at: user.created_at },
+      token: appToken
+    });
+  } catch (err) {
+    console.error('Google login error:', err);
+    res.status(400).json({ error: 'Google login failed', details: err.message });
   }
 };
 
@@ -90,4 +138,10 @@ exports.googleCallback = async (req, res) => {
         console.error('Google Callback Error:', err);
         res.status(500).send('Authentication Failed');
     }
+};
+
+exports.logout = (req, res) => {
+    // In a stateless JWT setup, logout is mainly handled by the client clearing the token.
+    // We provide this endpoint to fulfill the API requirement and for future extensibility (e.g., token blocklisting).
+    res.json({ message: 'Logged out successfully' });
 };

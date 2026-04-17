@@ -1,112 +1,216 @@
 import { Link } from 'react-router-dom';
-import { CheckCircle, Calendar, Zap, Layout, Shield, ArrowRight } from 'lucide-react';
+import { ArrowRight, Calendar, CheckCircle, Layout, Shield, Sparkles, Zap } from 'lucide-react';
+import InstallPWA from '../components/InstallPWA';
+
+const featureCards = [
+  {
+    icon: Layout,
+    title: 'Kanban & List Views',
+    desc: 'Visualize your work your way. Switch between list, board, and calendar views instantly.',
+  },
+  {
+    icon: Sparkles,
+    title: 'Secure & Reliable',
+    desc: 'Enterprise-grade security with regular backups and encrypted data transmission.',
+  },
+  {
+    icon: Shield,
+    title: 'Smart Scheduling',
+    desc: 'Auto-schedule tasks based on priority and your available calendar slots.',
+  },
+];
 
 export default function Landing({ token }) {
   return (
-    <div className="min-h-screen bg-white font-sans text-slate-900">
-      {/* Navbar */}
-      <nav className="border-b border-slate-100">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-           <div className="flex items-center gap-2">
-               <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">A</div>
-               <span className="text-xl font-bold tracking-tight">Antigravity</span>
-           </div>
-           <div className="flex items-center gap-4">
-               {token ? (
-                   <Link to="/dashboard" className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition">Go to Dashboard</Link>
-               ) : (
-                   <>
-                       <Link to="/login" className="text-sm font-medium text-slate-600 hover:text-slate-900">Sign In</Link>
-                       <Link to="/register" className="px-4 py-2 bg-slate-900 text-white text-sm font-medium rounded-lg hover:bg-slate-800 transition">Get Started</Link>
-                   </>
-               )}
-           </div>
+    <div className="relative min-h-screen overflow-hidden bg-transparent text-slate-900">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -left-28 top-20 h-80 w-80 rounded-full bg-aurora-300/45 blur-3xl animate-blob" />
+        <div className="absolute right-0 top-0 h-[26rem] w-[26rem] rounded-full bg-primary-300/35 blur-3xl animate-blob" />
+        <div className="absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-rosefire-300/35 blur-3xl animate-float" />
+      </div>
+
+      <nav className="fixed inset-x-0 top-0 z-50">
+        <div className="mx-auto mt-4 flex max-w-7xl items-center justify-between rounded-[28px] border border-white/60 bg-white/62 px-6 py-4 shadow-[0_18px_60px_rgba(15,23,42,0.12)] backdrop-blur-2xl">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-aurora-gradient text-lg font-black text-white">A</div>
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-400">Task Manager</p>
+              <p className="text-lg font-semibold text-slate-900">AI Personal Task Manager</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="hidden md:block">
+              <InstallPWA />
+            </div>
+            {token ? (
+              <Link
+                to="/dashboard"
+                className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-slate-800"
+              >
+                Go to Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link to="/login" className="hidden text-sm font-semibold text-slate-600 transition hover:text-slate-900 md:block">
+                  Sign In
+                </Link>
+                <Link
+                  to="/register"
+                  className="rounded-2xl bg-aurora-gradient px-5 py-3 text-sm font-semibold text-white transition hover-glow"
+                >
+                  Get Started
+                </Link>
+              </>
+            )}
+          </div>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="pt-20 pb-32 overflow-hidden">
-         <div className="max-w-6xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
-             <div>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-bold uppercase tracking-wider mb-6">
-                    <Zap size={14} /> New: AI Task Scheduling
-                </div>
-                <h1 className="text-5xl lg:text-6xl font-extrabold text-slate-900 leading-[1.1] mb-6">
-                    Organize your work <br/>
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600">with Intelligence.</span>
-                </h1>
-                <p className="text-lg text-slate-500 mb-8 leading-relaxed max-w-lg">
-                    Stop drowning in tasks. Antigravity uses AI to prioritize, schedule, and manage your workload so you can focus on what matters.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-4">
-                     {token ? (
-                         <Link to="/dashboard" className="inline-flex justify-center items-center gap-2 px-8 py-3.5 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20">
-                            Open Dashboard
-                            <ArrowRight size={18} />
-                         </Link>
-                     ) : (
-                        <Link to="/register" className="inline-flex justify-center items-center gap-2 px-8 py-3.5 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20">
-                            Start for free
-                            <ArrowRight size={18} />
-                        </Link>
-                     )}
-                     <button className="inline-flex justify-center items-center gap-2 px-6 py-3.5 bg-white border border-slate-200 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 transition-all">
-                        View Demo
-                     </button>
-                </div>
-                <div className="mt-8 flex items-center gap-4 text-sm text-slate-400">
-                    <div className="flex -space-x-2">
-                         {[1,2,3,4].map(i => (
-                             <div key={i} className="w-8 h-8 rounded-full bg-slate-200 border-2 border-white"></div>
-                         ))}
-                    </div>
-                    <p>Trusted by 10,000+ planners</p>
-                </div>
-             </div>
-             <div className="relative">
-                 <div className="absolute -top-10 -right-10 w-96 h-96 bg-indigo-400/20 rounded-full blur-3xl"></div>
-                 <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-100 p-2 transform rotate-2 hover:rotate-0 transition-transform duration-500">
-                     <img src="https://cdni.iconscout.com/illustration/premium/thumb/task-management-4517376-3742784.png?f=webp" alt="App Dashboard" className="rounded-xl w-full" />
-                 </div>
-             </div>
-         </div>
-      </section>
+      <main className="relative z-10 px-6 pb-20 pt-36">
+        <section className="mx-auto grid max-w-7xl items-center gap-14 lg:grid-cols-[1.05fr_0.95fr]">
+          <div className="animate-fade-in">
+            <div className="premium-chip mb-6">
+              <Zap size={14} className="text-primary-500" />
+              New: AI Task Scheduling
+            </div>
 
-      {/* Features */}
-      <section className="py-24 bg-slate-50">
-          <div className="max-w-6xl mx-auto px-6">
-              <div className="text-center max-w-2xl mx-auto mb-16">
-                  <h2 className="text-3xl font-bold text-slate-900 mb-4">Everything you need to ship faster</h2>
-                  <p className="text-slate-500">A simplistic yet powerful set of tools designed to help you and your team efficiently manage tasks and projects.</p>
-              </div>
+            <h1 className="max-w-3xl text-5xl font-semibold leading-[1.02] text-slate-950 md:text-7xl">
+              Organize your work
+              <span className="text-gradient"> with Intelligence.</span>
+            </h1>
 
-              <div className="grid md:grid-cols-3 gap-8">
-                  {[
-                      { icon: Layout, title: "Kanban & List Views", desc: "Visualize your work your way. Switch between list, board, and calendar views instantly." },
-                      { icon: Shield, title: "Secure & Reliable", desc: "Enterprise-grade security with regular backups and encrypted data transmission." },
-                      { icon: Calendar, title: "Smart Scheduling", desc: "Auto-schedule tasks based on priority and your available calendar slots." }
-                  ].map((feature, idx) => (
-                      <div key={idx} className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
-                          <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 mb-6">
-                              <feature.icon size={24} />
-                          </div>
-                          <h3 className="text-xl font-bold text-slate-900 mb-3">{feature.title}</h3>
-                          <p className="text-slate-500 leading-relaxed">{feature.desc}</p>
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600 md:text-xl">
+              Stop drowning in tasks. AI Personal Task Manager uses AI to prioritize, schedule, and manage your workload so you can focus on what matters.
+            </p>
+
+            <div className="mt-10 flex flex-col gap-4 sm:flex-row">
+              <Link
+                to={token ? '/dashboard' : '/register'}
+                className="inline-flex items-center justify-center gap-2 rounded-[22px] bg-aurora-gradient px-7 py-4 text-base font-semibold text-white transition hover-glow"
+              >
+                {token ? 'Open Dashboard' : 'Start for free'}
+                <ArrowRight size={18} />
+              </Link>
+              <Link
+                to="/login"
+                className="inline-flex items-center justify-center gap-2 rounded-[22px] border border-white/70 bg-white/70 px-7 py-4 text-base font-semibold text-slate-700 shadow-sm backdrop-blur-xl transition hover:-translate-y-0.5 hover:bg-white"
+              >
+                View Demo
+              </Link>
+            </div>
+
+            <div className="mt-10 flex flex-wrap items-center gap-3 text-sm text-slate-500">
+              <span className="premium-chip">
+                <CheckCircle size={14} className="text-emerald-500" />
+                Trusted by 10,000+ planners
+              </span>
+              <span className="premium-chip">
+                <Calendar size={14} className="text-aurora-500" />
+                Smart scheduling and calendar sync
+              </span>
+            </div>
+          </div>
+
+          <div className="relative animate-slide-up">
+            <div className="absolute inset-6 rounded-[34px] bg-gradient-to-br from-aurora-300/40 via-primary-300/25 to-rosefire-300/35 blur-3xl" />
+            <div className="surface-card relative overflow-hidden p-5">
+              <div className="rounded-[26px] border border-white/70 bg-slate-950 px-5 py-4 text-white shadow-[0_30px_70px_rgba(3,7,18,0.4)]">
+                <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.28em] text-white/45">Command Center</p>
+                    <h2 className="mt-2 text-2xl font-semibold">Organize your work with Intelligence.</h2>
+                  </div>
+                  <div className="rounded-2xl bg-white/10 px-3 py-2 text-sm text-white/70">AI Task Scheduling</div>
+                </div>
+
+                <div className="mt-5 grid gap-4 md:grid-cols-[1fr_0.78fr]">
+                  <div className="rounded-[24px] border border-white/10 bg-white/6 p-4 backdrop-blur-xl">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.25em] text-white/40">Today</p>
+                        <p className="mt-2 text-lg font-semibold">Visualize your work your way.</p>
                       </div>
-                  ))}
+                      <div className="rounded-2xl bg-gradient-to-br from-aurora-500 to-primary-500 px-4 py-2 text-sm font-semibold shadow-[0_18px_40px_rgba(95,120,246,0.28)]">
+                        Active
+                      </div>
+                    </div>
+
+                    <div className="mt-5 space-y-3">
+                      {[
+                        ['Kanban & List Views', 'Switch between list, board, and calendar views instantly.', 'bg-emerald-400/15 text-emerald-200'],
+                        ['Secure & Reliable', 'Enterprise-grade security with regular backups.', 'bg-aurora-400/15 text-aurora-100'],
+                        ['Smart Scheduling', 'Auto-schedule tasks based on priority.', 'bg-primary-400/15 text-primary-100'],
+                      ].map(([title, time, colors]) => (
+                        <div key={title} className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/6 px-4 py-3">
+                          <div>
+                            <p className="font-medium text-white">{title}</p>
+                            <p className="mt-1 text-xs text-white/45">{time}</p>
+                          </div>
+                          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${colors}`}>Ready</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="rounded-[24px] border border-white/10 bg-white/8 p-4 backdrop-blur-xl">
+                      <p className="text-xs uppercase tracking-[0.25em] text-white/40">Assistant</p>
+                      <p className="mt-3 rounded-2xl bg-white/8 px-4 py-3 text-sm leading-6 text-white/80">
+                        "AI Personal Task Manager uses AI to prioritize, schedule, and manage your workload."
+                      </p>
+                    </div>
+                    <div className="rounded-[24px] border border-white/10 bg-gradient-to-br from-white/12 to-white/4 p-4 backdrop-blur-xl">
+                      <p className="text-xs uppercase tracking-[0.25em] text-white/40">Connected Tools</p>
+                      <div className="mt-4 grid gap-3">
+                        {['Trusted by 10,000+ planners', 'Secure & Reliable', 'Smart Scheduling'].map((item) => (
+                          <div key={item} className="flex items-center gap-3 rounded-2xl bg-white/6 px-3 py-3 text-sm text-white/80">
+                            <span className="h-2.5 w-2.5 rounded-full bg-primary-300 animate-pulse-glow" />
+                            {item}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
+            </div>
           </div>
-      </section>
-      
-      {/* Footer */}
-      <footer className="bg-white py-12 border-t border-slate-100">
-          <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
-              <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 bg-slate-900 rounded-md flex items-center justify-center text-white text-xs font-bold">A</div>
-                  <span className="font-bold text-slate-900">Antigravity</span>
+        </section>
+
+        <section className="mx-auto mt-24 max-w-7xl">
+          <div className="mb-10 max-w-2xl">
+            <div className="premium-chip mb-5">Features</div>
+            <h2 className="text-4xl font-semibold text-slate-950 md:text-5xl">
+              Everything you need to ship faster
+            </h2>
+            <p className="mt-4 text-slate-500">
+              A simplistic yet powerful set of tools designed to help you and your team efficiently manage tasks and projects.
+            </p>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-3">
+            {featureCards.map((feature) => (
+              <div key={feature.title} className="surface-card group p-8 transition duration-300 hover:-translate-y-1.5">
+                <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-aurora-100 via-white to-primary-100 text-slate-900 shadow-inner">
+                  <feature.icon size={24} />
+                </div>
+                <h3 className="text-2xl font-semibold text-slate-900">{feature.title}</h3>
+                <p className="mt-4 text-base leading-7 text-slate-600">{feature.desc}</p>
               </div>
-              <p className="text-slate-400 text-sm">© 2024 Antigravity Inc. All rights reserved.</p>
+            ))}
           </div>
+        </section>
+      </main>
+
+      <footer className="relative z-10 border-t border-white/50 bg-white/50 py-10 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 text-sm text-slate-500 md:flex-row">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-950 text-sm font-bold text-white">A</div>
+            <span className="font-medium text-slate-700">AI Personal Task Manager</span>
+          </div>
+          <p>© 2024 AI Personal Task Manager. All rights reserved.</p>
+        </div>
       </footer>
     </div>
   );

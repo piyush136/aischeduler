@@ -1,34 +1,59 @@
 const axios = require('axios');
+const { resolveTaskId } = require('./utils/fuzzyTaskSearch');
+const { buildAuthHeaders, getApiErrorMessage } = require('./utils/runtime');
 
 const API_URL = process.env.BACKEND_URL;
 
 const deleteTask = {
-  name: "delete_task",
-  description: "Delete a task by its ID. WARNING: This is irreversible.",
+  name: 'delete_task',
+  description: 'Delete a task by ID or fuzzy task name. If multiple tasks match, the tool returns disambiguation options.',
   parameters: {
-    type: "object",
+    type: 'object',
     properties: {
       task_id: {
-        type: "string",
-        description: "The unique ID of the task to delete. You MUST get this from 'list_events' or 'get_today_tasks' first."
+        type: 'string',
+        description: 'Exact task ID.'
+      },
+      query: {
+        type: 'string',
+        description: 'Task name or partial text to resolve.'
+      },
+      team_id: {
+        type: 'string',
+        description: 'Optional team ID when resolving a team task.'
       }
-    },
-    required: ["task_id"]
+    }
   },
   execute: async (args, token) => {
     try {
-      if (!args.task_id) return { success: false, error: "Missing task_id" };
+      let { task_id, query, team_id } = args;
+      if (!task_id && !query) {
+        return { success: false, error: 'Must provide either task_id or query.' };
+      }
 
-      console.log(`[MCP] Deleting task ${args.task_id}`);
+      if (!task_id && query) {
+        const resolved = await resolveTaskId(query, token, team_id ? { scope: 'team', teamId: team_id, statusFilter: 'all' } : { statusFilter: 'all' });
+        if (!resolved.resolved) {
+          return {
+            success: false,
+            ambiguous: resolved.ambiguous || false,
+            matches: resolved.matches || [],
+            error: resolved.message || resolved.error
+          };
+        }
+        task_id = resolved.task_id;
+      }
 
-      await axios.delete(`${API_URL}/tasks/${args.task_id}`, {
-        headers: { Authorization: `Bearer ${token}` }
+      const response = await axios.delete(`${API_URL}/tasks/${task_id}`, {
+        headers: buildAuthHeaders(token)
       });
 
-      return { success: true, message: "Task deleted successfully." };
-
+      return {
+        success: true,
+        message: response.data?.message || 'Task deleted successfully.'
+      };
     } catch (error) {
-      return { success: false, error: error.message };
+      return { success: false, error: getApiErrorMessage(error, 'Failed to delete task.') };
     }
   }
 };

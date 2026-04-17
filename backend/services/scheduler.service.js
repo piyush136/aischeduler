@@ -1,38 +1,83 @@
 const cron = require('node-cron');
-const reminderService = require('./reminder.service');
 const Task = require('../models/task.model');
-// const notificationService = require('./notification.service'); // Future email/push
+const emailService = require('./email.service');
+const reminderService = require('./reminder.service');
 
 class SchedulerService {
   init() {
-    console.log('[Scheduler] Initialized. Checking for reminders every minute.');
-    
-    // Check every minute
-    cron.schedule('* * * * *', async () => {
+    console.log('[Scheduler] Initialized. Checking reminders every minute.');
+
+    const checkTasks = async () => {
       try {
-        console.log('[Scheduler] Checking for due reminders...');
-        const dueReminders = await reminderService.getDue();
-        
-        if (dueReminders.length === 0) return;
-
-        console.log(`[Scheduler] Found ${dueReminders.length} due reminders.`);
-
-        for (const reminder of dueReminders) {
-          await this.processReminder(reminder);
-        }
-      } catch (err) {
-        console.error('[Scheduler] Error:', err);
+        await this.processCustomReminders();
+        await this.processDefaultUpcomingTasks();
+      } catch (error) {
+        console.error('[Scheduler] Error:', error);
       }
-    });
+    };
+
+    checkTasks();
+    cron.schedule('* * * * *', checkTasks);
   }
 
-  async processReminder(reminder) {
-    // 1. Send Notification (Simulated)
-    const taskTitle = reminder.task_id ? reminder.task_id.title : 'Unknown Task';
-    console.log(`\n🔔 REMINDER: ${taskTitle} is due at ${reminder.remind_at}!\n`);
+  async processCustomReminders() {
+    const dueReminders = await reminderService.getDue();
+    if (dueReminders.length === 0) return;
 
-    // 2. Mark as sent
-    await reminderService.updateStatus(reminder._id, 'sent');
+    for (const reminder of dueReminders) {
+      const task = reminder.task_id;
+      if (!task?.user_id?.email) {
+        await reminderService.updateStatus(reminder._id, 'failed');
+        continue;
+      }
+
+      const sent = await emailService.sendTaskReminderEmail(
+        task.user_id.email,
+        task.user_id.name || 'User',
+        task
+      );
+
+      await reminderService.updateStatus(reminder._id, sent ? 'sent' : 'failed');
+    }
+  }
+
+  async processDefaultUpcomingTasks() {
+    const reminderTaskIds = await reminderService.getScheduledTaskIds();
+    const now = new Date();
+    const thirtyMinutesFromNow = new Date(now.getTime() + 30 * 60000);
+
+    const upcomingTasks = await Task.find({
+      _id: { $nin: reminderTaskIds },
+      status: 'pending',
+      has_time: { $ne: false },
+      due_at: { $gt: now, $lte: thirtyMinutesFromNow },
+      email_reminder_sent: { $ne: true }
+    }).populate('user_id', 'email name');
+
+    if (upcomingTasks.length === 0) return;
+
+    for (const task of upcomingTasks) {
+      await this.processDefaultReminder(task);
+    }
+  }
+
+  async processDefaultReminder(task) {
+    if (task.user_id?.email) {
+      const sent = await emailService.sendTaskReminderEmail(
+        task.user_id.email,
+        task.user_id.name || 'User',
+        task
+      );
+
+      if (sent) {
+        task.email_reminder_sent = true;
+        await task.save();
+      }
+      return;
+    }
+
+    task.email_reminder_sent = true;
+    await task.save();
   }
 }
 

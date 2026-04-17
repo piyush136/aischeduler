@@ -1,111 +1,261 @@
-import { useState, useRef, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
-import { MessageSquare, X, Send } from 'lucide-react';
+import { MessageSquare, Mic, MicOff, Send, Sparkles, X } from 'lucide-react';
+import ActionDialog from './ActionDialog';
 
 export default function ChatWidget({ token, onTaskUpdate }) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
-    { role: 'assistant', text: 'Hi! I can help you manage your tasks. Try "Add task to buy milk".' }
+    { role: 'assistant', text: 'Hi! I can help you manage tasks, plans, reminders, and scheduling.' }
   ]);
+  const [serverHistory, setServerHistory] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [transcript, setTranscript] = useState('');
+  const [dialogState, setDialogState] = useState(null);
   const scrollRef = useRef(null);
+  const recognitionRef = useRef(null);
+  const textareaRef = useRef(null);
+  const widgetRef = useRef(null);
+
+  const showNotice = (variant, title, message, options = {}) => {
+    setDialogState({
+      variant,
+      title,
+      message,
+      confirmLabel: options.confirmLabel || 'OK',
+      autoCloseMs: options.autoCloseMs ?? 2200
+    });
+  };
+
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+      setIsListening(true);
+      setTranscript('');
+    };
+
+    recognition.onresult = (event) => {
+      let interimTranscript = '';
+      let finalTranscript = '';
+
+      for (let i = event.resultIndex; i < event.results.length; i += 1) {
+        const currentTranscript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += `${currentTranscript} `;
+        } else {
+          interimTranscript += currentTranscript;
+        }
+      }
+
+      if (interimTranscript) setTranscript(interimTranscript);
+      if (finalTranscript) {
+        setInput((prev) => prev + finalTranscript);
+        setTranscript('');
+      }
+    };
+
+    recognition.onerror = (event) => {
+      setIsListening(false);
+      if (event.error === 'network') {
+        showNotice('error', 'Voice input unavailable', 'Network error during voice recognition. Please try again.', { autoCloseMs: 3200 });
+      }
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+      setTranscript('');
+    };
+
+    recognitionRef.current = recognition;
+  }, []);
 
   useEffect(() => {
     if (scrollRef.current) {
-        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isOpen]);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
+    }
+  }, [input]);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (isOpen && widgetRef.current && !widgetRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  const startListening = () => {
+    if (recognitionRef.current && !isListening) recognitionRef.current.start();
+  };
+
+  const stopListening = () => {
+    if (recognitionRef.current && isListening) recognitionRef.current.stop();
+  };
 
   const sendMessage = async (e) => {
     e.preventDefault();
     if (!input.trim()) return;
 
+    stopListening();
+
     const userMsg = { role: 'user', text: input };
-    setMessages(prev => [...prev, userMsg]);
+    setMessages((prev) => [...prev, userMsg]);
     setInput('');
     setLoading(true);
 
     try {
-      // Connects to MCP via Proxy if configured, or direct URL?
-      // Frontend Vite proxy maps /api -> Backend 3000.
-      // But MCP is on 4000. 
-      // Option A: Backend proxies to MCP.
-      // Option B: Frontend proxies /mcp -> 4000.
-      // Let's assume we update vite.config.js to allow /mcp proxy.
-      // Prepare history for OpenAI (map 'text' to 'content')
-      // and exclude the current message from history to avoid duplication if backend appends it, 
-      // but here we are stateless, so we send EVERYTHING including the new user message.
-      const history = [...messages, userMsg].map(m => ({
-        role: m.role,
-        content: m.text
-      }));
-
-      const res = await axios.post('http://localhost:4000/mcp/chat', { 
+      const res = await axios.post('http://localhost:4000/mcp/chat', {
         message: userMsg.text,
-        history 
+        history: serverHistory,
+        localDate: new Date().toLocaleDateString('en-CA'),
+        localTimeString: new Date().toLocaleTimeString('en-US'),
+        userTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      const reply = res.data.reply;
-      setMessages(prev => [...prev, { role: 'assistant', text: reply }]);
-      
-      // If tool was executed (indicated by reply content or side effect), refresh tasks.
-      // Ideally backend returns structured data, but for our Mock AI, let's just refresh.
+      const reply = res.data.reply || 'I completed the request, but the server did not send a text summary.';
+      if (Array.isArray(res.data.history)) setServerHistory(res.data.history);
+      setMessages((prev) => [...prev, { role: 'assistant', text: reply }]);
       if (onTaskUpdate) onTaskUpdate();
-
     } catch (err) {
-      setMessages(prev => [...prev, { role: 'assistant', text: 'Error talking to AI.' }]);
+      const errorMessage = err.response?.data?.message || err.response?.data?.error || 'Error talking to AI.';
+      setMessages((prev) => [...prev, { role: 'assistant', text: errorMessage }]);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div className="fixed bottom-6 right-6 z-[2000]" ref={widgetRef}>
       {!isOpen && (
-        <button 
-            onClick={() => setIsOpen(true)}
-            className="p-4 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition"
+        <button
+          onClick={() => setIsOpen(true)}
+          className="group relative overflow-hidden rounded-[24px] bg-slate-950 p-4 text-white shadow-[0_24px_60px_rgba(15,23,42,0.32)] transition hover:-translate-y-1"
         >
-          <MessageSquare size={24} />
+          <div className="absolute inset-0 bg-gradient-to-br from-aurora-500 via-primary-500 to-rosefire-500 opacity-90 transition group-hover:scale-110" />
+          <div className="relative flex items-center gap-3">
+            <MessageSquare size={22} />
+            <span className="hidden text-sm font-semibold sm:block">Ask AI</span>
+          </div>
         </button>
       )}
 
       {isOpen && (
-        <div className="w-80 h-96 bg-white rounded-lg shadow-xl flex flex-col border border-gray-200">
-          <div className="p-4 bg-blue-600 text-white rounded-t-lg flex justify-between items-center">
-            <h3 className="font-bold">AI Assistant</h3>
-            <button onClick={() => setIsOpen(false)}><X size={18} /></button>
-          </div>
-          
-          <div className="flex-1 p-4 overflow-y-auto space-y-4" ref={scrollRef}>
-            {messages.map((msg, idx) => (
-              <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[80%] p-2 rounded-lg text-sm ${
-                  msg.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-800'
-                }`}>
-                  {msg.text}
+        <div className="h-[34rem] w-[24rem] overflow-hidden rounded-[30px] border border-white/60 bg-white/78 shadow-[0_35px_100px_rgba(15,23,42,0.28)] backdrop-blur-2xl">
+          <div className="relative overflow-hidden border-b border-white/60 bg-slate-950 px-4 py-3.5 text-white">
+            <div className="absolute inset-0 bg-gradient-to-r from-aurora-600 via-primary-500 to-rosefire-500 opacity-80" />
+            <div className="relative flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/12">
+                  <Sparkles size={17} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold">AI Assistant</h3>
+                  <p className="text-[11px] text-white/65">Tasks, reminders, scheduling</p>
                 </div>
               </div>
-            ))}
-            {loading && <div className="text-gray-400 text-xs animate-pulse">Thinking...</div>}
+              <button onClick={() => setIsOpen(false)} className="rounded-2xl bg-white/10 p-2 transition hover:bg-white/15">
+                <X size={16} />
+              </button>
+            </div>
           </div>
 
-          <form onSubmit={sendMessage} className="p-2 border-t flex space-x-2">
-            <input 
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Type a message..."
-                className="flex-1 px-3 py-1 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-            <button type="submit" disabled={loading} className="p-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50">
-                <Send size={16} />
-            </button>
-          </form>
+          <div className="flex h-[calc(100%-154px)] flex-col">
+            <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto bg-slate-50/40 px-3 py-3.5">
+              {messages.map((msg, idx) => (
+                <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div
+                    className={`max-w-[86%] rounded-[22px] px-3.5 py-2.5 text-[13px] leading-6 shadow-sm ${
+                      msg.role === 'user'
+                        ? 'bg-slate-950 text-white shadow-[0_16px_35px_rgba(15,23,42,0.18)]'
+                        : 'border border-white/70 bg-white/92 text-slate-700'
+                    }`}
+                  >
+                    {msg.text}
+                  </div>
+                </div>
+              ))}
+              {loading && (
+                <div className="flex justify-start">
+                  <div className="rounded-[22px] border border-white/70 bg-white/92 px-3.5 py-2.5 text-xs font-medium text-slate-400 shadow-sm">
+                    Thinking...
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {transcript && (
+              <div className="mx-3 mb-2 rounded-2xl border border-amber-200 bg-amber-50 px-3.5 py-2 text-xs font-medium text-amber-700">
+                Listening: {transcript}
+              </div>
+            )}
+
+            <form onSubmit={sendMessage} className="border-t border-white/60 bg-white/72 px-3 py-3">
+              <div className="rounded-[24px] border border-white/70 bg-white/85 p-2 shadow-sm">
+                <div className="flex items-end gap-1.5">
+                  <textarea
+                    ref={textareaRef}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage(e);
+                      }
+                    }}
+                    placeholder={isListening ? 'Listening...' : 'Ask AI to plan, schedule, update, or organize...'}
+                    className="min-h-[42px] max-h-[104px] flex-1 resize-none overflow-y-auto bg-transparent px-3 py-2 text-sm text-slate-700 outline-none placeholder:text-slate-400"
+                    style={{ lineHeight: '1.5' }}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={isListening ? stopListening : startListening}
+                    title={isListening ? 'Stop listening' : 'Start voice input'}
+                    className={`rounded-2xl p-2.5 transition ${
+                      isListening ? 'bg-rose-500 text-white hover:bg-rose-600' : 'bg-emerald-500 text-white hover:bg-emerald-600'
+                    }`}
+                  >
+                    {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+                  </button>
+                  <button type="submit" disabled={loading} className="rounded-2xl bg-aurora-gradient p-2.5 text-white transition hover-glow disabled:opacity-60">
+                    <Send size={16} />
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
         </div>
       )}
+
+      <ActionDialog
+        isOpen={!!dialogState}
+        variant={dialogState?.variant}
+        title={dialogState?.title}
+        message={dialogState?.message}
+        confirmLabel={dialogState?.confirmLabel}
+        onClose={() => setDialogState(null)}
+        autoCloseMs={dialogState?.autoCloseMs}
+      />
     </div>
   );
 }

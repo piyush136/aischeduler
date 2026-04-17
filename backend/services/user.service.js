@@ -13,6 +13,22 @@ class UserService {
   async findById(id) {
     return await User.findById(id).select('-password_hash');
   }
+
+  async updateProfile(id, profileData) {
+    return await User.findByIdAndUpdate(
+      id,
+      { $set: profileData },
+      { new: true, runValidators: true }
+    ).select('-password_hash');
+  }
+
+  async updatePassword(id, hashedPassword) {
+    return await User.findByIdAndUpdate(
+      id,
+      { $set: { password_hash: hashedPassword } },
+      { new: true }
+    );
+  }
 }
 
 module.exports = new UserService();

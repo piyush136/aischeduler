@@ -1,62 +1,83 @@
 const axios = require('axios');
+const { getDayBounds, normalizeDueAt } = require('./utils/dateTime');
+const { buildAuthHeaders, getApiErrorMessage } = require('./utils/runtime');
 
 const API_URL = process.env.BACKEND_URL;
 
 const listEvents = {
-  name: "list_events",
-  description: "List calendar events and tasks for a given date range to check availability or summarize schedule.",
+  name: 'list_events',
+  description: 'List local scheduled items and mirrored Google Calendar events for a date range.',
   parameters: {
-    type: "object",
+    type: 'object',
     properties: {
       start_date: {
-        type: "string",
-        description: "Start date in ISO-8601 format (e.g., '2023-10-27T00:00:00Z'). Defaults to Start of Today if not provided."
+        type: 'string',
+        description: 'Optional start date/time or natural language date.'
       },
       end_date: {
-        type: "string",
-        description: "End date in ISO-8601 format. Defaults to End of Today if not provided."
+        type: 'string',
+        description: 'Optional end date/time or natural language date.'
       }
     }
   },
   execute: async (args, token) => {
     try {
-      let { start_date, end_date } = args;
+      const { _meta = {} } = args;
+      let startDate;
+      let endDate;
 
-      // Defaults
-      if (!start_date) {
-        const now = new Date();
-        now.setHours(0,0,0,0);
-        start_date = now.toISOString();
-      }
-      if (!end_date) {
-         const end = new Date(start_date); // Start from start_date
-         end.setHours(23,59,59,999); // End of that day
-         end_date = end.toISOString();
+      if (args.start_date) {
+        const normalizedStart = normalizeDueAt(args.start_date, _meta);
+        if (!normalizedStart.dueAt) {
+          return { success: false, error: normalizedStart.error || `Could not understand "${args.start_date}".` };
+        }
+        startDate = new Date(normalizedStart.dueAt);
+      } else {
+        startDate = getDayBounds(_meta.localDate || 'today', _meta).start;
       }
 
-      console.log(`[MCP] Fetching events from ${start_date} to ${end_date}`);
+      if (args.end_date) {
+        const normalizedEnd = normalizeDueAt(args.end_date, _meta);
+        if (!normalizedEnd.dueAt) {
+          return { success: false, error: normalizedEnd.error || `Could not understand "${args.end_date}".` };
+        }
+        endDate = new Date(normalizedEnd.dueAt);
+      } else {
+        endDate = new Date(startDate);
+        endDate.setHours(23, 59, 59, 999);
+      }
 
       const response = await axios.get(`${API_URL}/calendar/events`, {
-        params: { start: start_date, end: end_date },
-        headers: { Authorization: `Bearer ${token}` }
+        params: { start: startDate.toISOString(), end: endDate.toISOString() },
+        headers: buildAuthHeaders(token)
       });
 
-      const events = response.data.events || [];
-      
-      // Simplify output for LLM to save tokens
-      const summary = events.map(e => {
-        const time = new Date(e.start).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-        return `- [${time}] ${e.title} (${e.source})`; 
-      }).join('\n');
+      const localEvents = response.data.events || [];
+      const externalEvents = response.data.externalEvents || [];
+      const allEvents = [
+        ...localEvents.map(event => ({ ...event, source: event.source || 'local' })),
+        ...externalEvents.map(event => ({ ...event, source: event.source || 'google' }))
+      ];
 
-      return { 
-        count: events.length, 
-        events_summary: summary || "No events found for this period." 
+      const eventsSummary = allEvents
+        .sort((a, b) => new Date(a.start) - new Date(b.start))
+        .map(event => {
+          const time = event.start ? new Date(event.start).toLocaleString() : 'No time';
+          return `- [${time}] ${event.title} (${event.source})`;
+        })
+        .join('\n');
+
+      return {
+        success: true,
+        connected: Boolean(response.data.connected),
+        count: allEvents.length,
+        localCount: localEvents.length,
+        externalCount: externalEvents.length,
+        events_summary: eventsSummary || 'No events found for this period.',
+        events: allEvents
       };
-
     } catch (error) {
-      console.error("[MCP] list_events error:", error.message);
-      return { success: false, error: "Failed to fetch events. Ensure Google Calendar is connected if needed." };
+      return { success: false, error: getApiErrorMessage(error, 'Failed to fetch events.') };
     }
   }
 };

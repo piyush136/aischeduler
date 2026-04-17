@@ -6,7 +6,7 @@ const schedulerService = require('./services/scheduler.service');
 const PORT = process.env.PORT || 3000;
 
 // Start Scheduler
-// schedulerService.init();
+schedulerService.init();
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

@@ -8,14 +8,30 @@ import CalendarCallback from './pages/CalendarCallback';
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem('token'));
+  const [user, setUser] = useState(() => {
+    const stored = localStorage.getItem('user');
+    return stored ? JSON.parse(stored) : null;
+  });
 
-  const setAuth = (newToken) => {
+  const setAuth = (newToken, userData = null) => {
     if (newToken) {
       localStorage.setItem('token', newToken);
+      if (userData) {
+        localStorage.setItem('user', JSON.stringify(userData));
+        setUser(userData);
+      }
     } else {
       localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setUser(null);
     }
     setToken(newToken);
+  };
+
+  const updateUserProfile = (updatedData) => {
+    const newUser = { ...user, ...updatedData };
+    localStorage.setItem('user', JSON.stringify(newUser));
+    setUser(newUser);
   };
 
   return (
@@ -25,7 +41,7 @@ function App() {
         <Route path="/login" element={!token ? <Login setAuth={setAuth} /> : <Navigate to="/dashboard" />} />
         <Route path="/register" element={!token ? <Register setAuth={setAuth} /> : <Navigate to="/dashboard" />} />
         <Route path="/calendar/callback" element={<CalendarCallback />} /> 
-        <Route path="/dashboard" element={token ? <Dashboard token={token} logout={() => setAuth(null)} /> : <Navigate to="/login" />} />
+        <Route path="/dashboard" element={token ? <Dashboard token={token} user={user} logout={() => setAuth(null)} updateUser={updateUserProfile} /> : <Navigate to="/login" />} />
       </Routes>
     </BrowserRouter>
   );

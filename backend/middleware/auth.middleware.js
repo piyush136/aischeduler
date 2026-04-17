@@ -11,7 +11,12 @@ const authMiddleware = (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
-    console.log('[AuthMiddleware] Authenticated User:', req.user);
+    // Keep auth logging opt-in so normal API traffic does not flood the console.
+    if (process.env.DEBUG_AUTH === 'true') {
+      console.log(
+        `[AuthMiddleware] ${req.method} ${req.originalUrl} user=${decoded.email} id=${decoded.id}`
+      );
+    }
     next();
   } catch (err) {
     res.status(400).json({ error: 'Invalid token.' });
