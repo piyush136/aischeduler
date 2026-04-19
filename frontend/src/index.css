@@ -10,12 +10,37 @@
     @apply scroll-smooth;
   }
 
+  html,
+  body {
+    overflow-x: hidden;
+  }
+
   body {
     background:
       radial-gradient(circle at top left, rgba(95, 120, 246, 0.14), transparent 28%),
       radial-gradient(circle at top right, rgba(37, 150, 136, 0.12), transparent 24%),
       linear-gradient(180deg, #fbfcff 0%, #f4f6fb 42%, #eff3f7 100%);
     @apply text-slate-900 font-sans tracking-tight antialiased;
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  img,
+  video,
+  canvas,
+  svg {
+    max-width: 100%;
+  }
+
+  input,
+  textarea,
+  select,
+  button {
+    min-width: 0;
   }
 
   body::before {
@@ -71,7 +96,7 @@
     box-shadow: 0 18px 55px rgba(95, 120, 246, 0.2);
   }
   .surface-card {
-    @apply rounded-[28px] border border-white/70 bg-white/80 backdrop-blur-2xl shadow-[0_25px_75px_rgba(15,23,42,0.12)];
+    @apply rounded-[22px] border border-white/70 bg-white/80 backdrop-blur-2xl shadow-[0_25px_75px_rgba(15,23,42,0.12)] sm:rounded-[28px];
   }
   .premium-input {
     @apply w-full rounded-2xl border border-white/70 bg-white/75 px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400;

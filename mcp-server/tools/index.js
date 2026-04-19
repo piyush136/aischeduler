@@ -15,6 +15,9 @@ const setReminder = require('./setReminder.tool');
 const listReminders = require('./listReminders.tool');
 const syncCalendar = require('./syncCalendar.tool');
 const disconnectCalendar = require('./disconnectCalendar.tool');
+const copyTask = require('./copyTask.tool');
+const listNotifications = require('./listNotifications.tool');
+const respondTeamInvite = require('./respondTeamInvite.tool');
 
 // Team tools
 const createTeam = require('./createTeam.tool');
@@ -51,6 +54,9 @@ const tools = [
   listReminders,
   syncCalendar,
   disconnectCalendar,
+  copyTask,
+  listNotifications,
+  respondTeamInvite,
   // Team tools
   createTeam,
   listTeams,

@@ -9,7 +9,7 @@ const {
   summarizeToolResult
 } = require('./chat.helpers');
 
-const MAX_TOOL_CHAIN = 5;
+const MAX_TOOL_CHAIN = 10;
 
 router.post('/chat', async (req, res) => {
   try {

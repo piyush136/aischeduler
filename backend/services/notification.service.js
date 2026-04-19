@@ -10,6 +10,8 @@ class NotificationService {
       type: data.type,
       task_id: data.task_id || null,
       team_id: data.team_id || null,
+      actor_id: data.actor_id || null,
+      conversation_type: data.conversation_type || null,
       message: data.message,
       is_read: false
     });
@@ -23,6 +25,7 @@ class NotificationService {
     return await Notification.find({ user_id: userId })
       .populate('task_id', 'title status due_at')
       .populate('team_id', 'name')
+      .populate('actor_id', 'name email profile_picture')
       .sort({ created_at: -1 })
       .limit(50)
       .lean();

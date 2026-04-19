@@ -37,4 +37,7 @@ router.post('/:taskId/subtasks', taskController.addSubtask);
 router.patch('/:taskId/subtasks/:subtaskId', taskController.updateSubtask);
 router.delete('/:taskId/subtasks/:subtaskId', taskController.deleteSubtask);
 
+// Task comment routes
+router.post('/:taskId/comments', taskController.addComment);
+
 module.exports = router;

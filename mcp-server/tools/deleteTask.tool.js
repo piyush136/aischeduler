@@ -2,7 +2,7 @@ const axios = require('axios');
 const { resolveTaskId } = require('./utils/fuzzyTaskSearch');
 const { buildAuthHeaders, getApiErrorMessage } = require('./utils/runtime');
 
-const API_URL = process.env.BACKEND_URL;
+const { BACKEND_API_URL: API_URL } = require('../config/api');
 
 const deleteTask = {
   name: 'delete_task',

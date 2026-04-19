@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { apiUrl } from '../config/api';
 
 export default function CalendarCallback({ setAuth }) {
   const [searchParams] = useSearchParams();
@@ -31,7 +32,7 @@ export default function CalendarCallback({ setAuth }) {
 
       try {
         setStatus('Exchanging authorization code...');
-        const response = await axios.post('/api/calendar/connect', { code }, {
+        const response = await axios.post(apiUrl('/calendar/connect'), { code }, {
           headers: { Authorization: `Bearer ${token}` }
         });
         

@@ -146,6 +146,26 @@ const taskSchema = new mongoose.Schema({
         default: Date.now
       }
     }
+  ],
+  comments: [
+    {
+      _id: mongoose.Schema.Types.ObjectId,
+      user_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+      },
+      body: {
+        type: String,
+        required: true,
+        trim: true,
+        maxlength: 2000
+      },
+      created_at: {
+        type: Date,
+        default: Date.now
+      }
+    }
   ]
 }, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
 

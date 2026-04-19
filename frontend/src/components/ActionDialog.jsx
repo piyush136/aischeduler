@@ -65,8 +65,8 @@ export default function ActionDialog({
   const Icon = styles.icon;
 
   return (
-    <div className="fixed inset-0 z-[2200] flex items-center justify-center bg-slate-950/45 px-4 backdrop-blur-sm">
-      <div className="relative w-full max-w-md overflow-hidden rounded-[28px] bg-white shadow-[0_28px_90px_rgba(15,23,42,0.25)]">
+    <div className="fixed inset-0 z-[5000] flex items-center justify-center bg-slate-950/45 px-3 backdrop-blur-sm sm:px-4">
+      <div className="relative w-full max-w-md overflow-hidden rounded-[24px] bg-white shadow-[0_28px_90px_rgba(15,23,42,0.25)] sm:rounded-[28px]">
         <div className={`h-1.5 w-full bg-gradient-to-r ${styles.accentClass}`} />
         <button
           type="button"
@@ -77,15 +77,15 @@ export default function ActionDialog({
           <X size={18} />
         </button>
 
-        <div className="px-6 pb-6 pt-7">
+        <div className="px-4 pb-5 pt-6 sm:px-6 sm:pb-6 sm:pt-7">
           <div className={`mb-5 flex h-14 w-14 items-center justify-center rounded-2xl ${styles.iconClass}`}>
             <Icon size={28} />
           </div>
 
           <h3 className="text-xl font-semibold tracking-tight text-slate-900">{title}</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-500">{message}</p>
+          <p className="mt-2 break-words text-sm leading-6 text-slate-500">{message}</p>
 
-          <div className="mt-7 flex gap-3">
+          <div className="mt-7 flex flex-col-reverse gap-2 sm:flex-row sm:gap-3">
             {onConfirm ? (
               <>
                 <button

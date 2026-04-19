@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Bell, Check, Clock, Users, ArrowRight } from 'lucide-react';
+import { Bell, Check, Clock, Users, ArrowRight, MessageSquare } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import ActionDialog from './ActionDialog';
+import { apiUrl } from '../config/api';
 
-export default function InboxView({ token }) {
+export default function InboxView({ token, onOpenNotification }) {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogState, setDialogState] = useState(null);
@@ -20,7 +21,7 @@ export default function InboxView({ token }) {
 
   const fetchNotifications = async () => {
     try {
-      const res = await fetch('/api/notifications', {
+      const res = await fetch(apiUrl('/notifications'), {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -40,7 +41,7 @@ export default function InboxView({ token }) {
 
   const markAsRead = async (id) => {
     try {
-      await fetch(`/api/notifications/${id}/read`, {
+      await fetch(apiUrl(`/notifications/${id}/read`), {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -56,7 +57,7 @@ export default function InboxView({ token }) {
     e.stopPropagation();
     try {
       const endpoint = action === 'accept' ? 'accept-invite' : 'reject-invite';
-      const res = await fetch(`/api/teams/${notif.team_id._id || notif.team_id}/${endpoint}`, {
+      const res = await fetch(apiUrl(`/teams/${notif.team_id._id || notif.team_id}/${endpoint}`), {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -77,6 +78,15 @@ export default function InboxView({ token }) {
     }
   };
 
+  const handleNotificationClick = async (notif) => {
+    if (!notif.is_read) {
+      await markAsRead(notif._id);
+    }
+    if (notif.type === 'team_message' && onOpenNotification) {
+      onOpenNotification(notif);
+    }
+  };
+
   const getTypeIcon = (type) => {
     switch (type) {
       case 'task_assigned':
@@ -87,6 +97,8 @@ export default function InboxView({ token }) {
         return <div className="w-10 h-10 bg-violet-100 rounded-full flex items-center justify-center flex-shrink-0"><Users size={18} className="text-violet-600" /></div>;
       case 'team_invite':
         return <div className="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center flex-shrink-0"><Users size={18} className="text-teal-600" /></div>;
+      case 'team_message':
+        return <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0"><MessageSquare size={18} className="text-emerald-600" /></div>;
       default:
         return <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center flex-shrink-0"><Bell size={18} className="text-slate-500" /></div>;
     }
@@ -122,8 +134,8 @@ export default function InboxView({ token }) {
           {notifications.map(notif => (
             <div
               key={notif._id}
-              onClick={() => !notif.is_read && markAsRead(notif._id)}
-              className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all duration-200 text-left ${
+              onClick={() => handleNotificationClick(notif)}
+              className={`flex w-full flex-col gap-3 rounded-xl border p-4 text-left transition-all duration-200 sm:flex-row sm:items-center sm:gap-4 ${
                 notif.is_read
                   ? 'bg-white border-slate-100 opacity-60'
                   : 'cursor-pointer bg-white border-indigo-100 shadow-sm hover:shadow-md hover:border-indigo-200 hover:-translate-y-0.5'
@@ -138,8 +150,8 @@ export default function InboxView({ token }) {
               {getTypeIcon(notif.type)}
 
               {/* Content */}
-              <div className="flex-1 min-w-0">
-                <p className={`text-sm ${notif.is_read ? 'text-slate-500' : 'text-slate-800 font-medium'}`}>
+              <div className="min-w-0 flex-1">
+                <p className={`break-words text-sm ${notif.is_read ? 'text-slate-500' : 'text-slate-800 font-medium'}`}>
                   {notif.message}
                 </p>
                 <div className="flex items-center gap-3 mt-1.5 flex-wrap">
@@ -162,16 +174,16 @@ export default function InboxView({ token }) {
                   )}
                   
                   {notif.type === 'team_invite' && !notif.is_read && (
-                    <div className="flex gap-2 ml-auto w-full md:w-auto mt-2 md:mt-0">
+                    <div className="mt-2 flex w-full gap-2 md:ml-auto md:mt-0 md:w-auto">
                       <button 
                         onClick={(e) => handleInvite(e, notif, 'accept')}
-                        className="px-3 py-1 bg-teal-50 text-teal-600 hover:bg-teal-100 rounded-lg text-xs font-semibold transition"
+                        className="flex-1 rounded-lg bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-600 transition hover:bg-teal-100 md:flex-none"
                       >
                         Accept
                       </button>
                       <button 
                         onClick={(e) => handleInvite(e, notif, 'reject')}
-                        className="px-3 py-1 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg text-xs font-semibold transition"
+                        className="flex-1 rounded-lg bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-600 transition hover:bg-rose-100 md:flex-none"
                       >
                         Reject
                       </button>

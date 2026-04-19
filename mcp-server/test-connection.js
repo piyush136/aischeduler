@@ -6,15 +6,14 @@
  */
 
 const axios = require('axios');
+const { BACKEND_API_URL, MCP_PUBLIC_URL } = require('./config/api');
 
-const MCP_SERVER_URL = process.env.MCP_SERVER_URL || 'http://localhost:3001';
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5000';
 const TEST_TOKEN = process.env.TEST_TOKEN || 'your-test-token-here';
 
 console.log('🔍 Testing MCP → Backend Connection\n');
 console.log('Configuration:');
-console.log(`  MCP Server: ${MCP_SERVER_URL}`);
-console.log(`  Backend: ${BACKEND_URL}`);
+console.log(`  MCP Server: ${MCP_PUBLIC_URL}`);
+console.log(`  Backend: ${BACKEND_API_URL}`);
 console.log(`  Token: ${TEST_TOKEN.substring(0, 10)}...\n`);
 
 // Test Cases
@@ -43,7 +42,7 @@ async function testMCPConnection() {
     const testMessage = 'What is today\'s date?';
     console.log(`Sending: "${testMessage}"`);
     
-    const response = await axios.post(`${MCP_SERVER_URL}/chat`, {
+    const response = await axios.post(`${MCP_PUBLIC_URL}/chat`, {
       message: testMessage,
       history: []
     }, {
@@ -68,7 +67,7 @@ async function testDateParsing() {
       console.log(`Test: ${testCase.name}`);
       console.log(`Message: "${testCase.message}"`);
       
-      const response = await axios.post(`${MCP_SERVER_URL}/chat`, {
+      const response = await axios.post(`${MCP_PUBLIC_URL}/chat`, {
         message: testCase.message,
         history: []
       }, {
@@ -109,7 +108,7 @@ async function testBackendTaskCreation() {
     
     console.log('Creating task with data:', taskData);
     
-    const response = await axios.post(`${BACKEND_URL}/tasks`, taskData, {
+    const response = await axios.post(`${BACKEND_API_URL}/tasks`, taskData, {
       headers: { 'Authorization': `Bearer ${TEST_TOKEN}` }
     });
     

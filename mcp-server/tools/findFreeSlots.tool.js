@@ -2,7 +2,7 @@ const axios = require('axios');
 const { normalizeDueAt } = require('./utils/dateTime');
 const { buildAuthHeaders, getApiErrorMessage } = require('./utils/runtime');
 
-const API_URL = process.env.BACKEND_URL;
+const { BACKEND_API_URL: API_URL } = require('../config/api');
 
 const findFreeSlots = {
   name: 'find_free_slots',

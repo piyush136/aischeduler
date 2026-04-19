@@ -1,7 +1,7 @@
 const axios = require('axios');
 const { buildAuthHeaders, getApiErrorMessage } = require('./utils/runtime');
 
-const API_URL = process.env.BACKEND_URL;
+const { BACKEND_API_URL: API_URL } = require('../config/api');
 
 const updateSubtask = {
   name: 'update_subtask',

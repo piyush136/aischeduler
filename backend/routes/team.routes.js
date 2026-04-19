@@ -27,6 +27,12 @@ router.get('/:teamId/members', teamController.getTeamMembers);
 // GET /teams/:teamId/tasks — Get all tasks for a team
 router.get('/:teamId/tasks', teamController.getTeamTasks);
 
+// GET /teams/:teamId/messages
+router.get('/:teamId/messages', teamController.getTeamMessages);
+
+// POST /teams/:teamId/messages
+router.post('/:teamId/messages', teamController.sendTeamMessage);
+
 // POST /teams/:teamId/accept-invite
 router.post('/:teamId/accept-invite', teamController.acceptInvite);
 

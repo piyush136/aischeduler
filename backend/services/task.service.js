@@ -1,5 +1,6 @@
 const Task = require('../models/task.model');
 const mongoose = require('mongoose');
+const TeamMember = require('../models/teamMember.model');
 const { getTaskDurationMinutes, normalizeDate } = require('../utils/taskDate');
 
 function normalizeSubtasks(subtasks = []) {
@@ -132,6 +133,46 @@ class TaskService {
       { $pull: { subtasks: { _id: subtaskId } } },
       { new: true }
     );
+  }
+
+  async canAccessTask(task, userId) {
+    if (!task) return false;
+    if (String(task.user_id) === String(userId) || String(task.created_by) === String(userId)) {
+      return true;
+    }
+    if (!task.team_id) return false;
+
+    const membership = await TeamMember.findOne({
+      team_id: task.team_id,
+      user_id: userId,
+      status: 'active'
+    });
+    if (!membership) return false;
+
+    const assignees = Array.isArray(task.assigned_to) ? task.assigned_to : [];
+    if (assignees.length === 0) return true;
+    return assignees.some(assigneeId => String(assigneeId) === String(userId));
+  }
+
+  async addComment(taskId, userId, body) {
+    const task = await Task.findById(taskId);
+    const canAccess = await this.canAccessTask(task, userId);
+    if (!canAccess) return null;
+
+    const comment = {
+      _id: new mongoose.Types.ObjectId(),
+      user_id: userId,
+      body: String(body || '').trim(),
+      created_at: new Date()
+    };
+
+    task.comments.push(comment);
+    await task.save();
+
+    return Task.findById(taskId)
+      .populate('assigned_to', 'name email')
+      .populate('created_by', 'name email')
+      .populate('comments.user_id', 'name email profile_picture');
   }
 
   async createBulk(tasksData, userId) {

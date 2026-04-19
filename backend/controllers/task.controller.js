@@ -1,6 +1,7 @@
 const taskService = require('../services/task.service');
 const User = require('../models/user.model');
 const Task = require('../models/task.model');
+const TeamMember = require('../models/teamMember.model');
 const calendarService = require('../services/calendar.service');
 const notificationService = require('../services/notification.service');
 const reminderService = require('../services/reminder.service');
@@ -246,6 +247,56 @@ exports.deleteSubtask = async (req, res) => {
     res.json(task);
   } catch (error) {
     res.status(500).json({ error: 'Failed to delete subtask' });
+  }
+};
+
+exports.addComment = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { body } = req.body;
+
+    const trimmedBody = String(body || '').trim();
+    if (!trimmedBody) {
+      return res.status(400).json({ error: 'Comment is required' });
+    }
+    if (trimmedBody.length > 2000) {
+      return res.status(400).json({ error: 'Comment is too long' });
+    }
+
+    const task = await taskService.addComment(req.params.taskId, userId, trimmedBody);
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found or not accessible' });
+    }
+
+    const commenter = await User.findById(userId);
+    let recipients = Array.isArray(task.assigned_to)
+      ? task.assigned_to.map(assignee => assignee._id || assignee)
+      : [];
+    if (recipients.length === 0 && task.team_id) {
+      const teamMembers = await TeamMember.find({ team_id: task.team_id, status: 'active' }).select('user_id').lean();
+      recipients = teamMembers.map(member => member.user_id);
+    }
+    if (recipients.length === 0) {
+      recipients = [task.created_by?._id || task.created_by, task.user_id?._id || task.user_id].filter(Boolean);
+    }
+
+    const uniqueRecipients = [...new Set(recipients.map(id => String(id)))]
+      .filter(id => id !== String(userId));
+
+    await Promise.all(uniqueRecipients.map(recipientId => notificationService.create({
+      user_id: recipientId,
+      type: 'comment',
+      task_id: task._id,
+      team_id: task.team_id || null,
+      message: `${commenter?.name || 'Someone'} commented on "${task.title}": "${trimmedBody.length > 80 ? `${trimmedBody.slice(0, 77)}...` : trimmedBody}"`
+    }).catch(error => {
+      console.error('[TaskController] Failed to create comment notification:', error.message);
+    })));
+
+    res.status(201).json(task);
+  } catch (error) {
+    console.error('[TaskController] Add comment error:', error);
+    res.status(500).json({ error: 'Failed to add comment' });
   }
 };
 

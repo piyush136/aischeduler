@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { X, Users } from 'lucide-react';
+import { apiUrl } from '../config/api';
 
 export default function CreateTeamModal({ isOpen, onClose, onTeamCreated, token }) {
   const [name, setName] = useState('');
@@ -15,7 +16,7 @@ export default function CreateTeamModal({ isOpen, onClose, onTeamCreated, token 
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/teams', {
+      const res = await fetch(apiUrl('/teams'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -41,10 +42,10 @@ export default function CreateTeamModal({ isOpen, onClose, onTeamCreated, token 
   };
 
   return (
-    <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50 p-3 backdrop-blur-sm">
+      <div className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white shadow-2xl transition-all animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-5 flex justify-between items-center">
+        <div className="flex items-center justify-between gap-3 bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-4 sm:px-6 sm:py-5">
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
             <Users size={20} />
             Create New Team
@@ -55,7 +56,7 @@ export default function CreateTeamModal({ isOpen, onClose, onTeamCreated, token 
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-5 p-4 sm:p-6">
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-2">Team Name</label>
             <input
@@ -74,7 +75,7 @@ export default function CreateTeamModal({ isOpen, onClose, onTeamCreated, token 
             </div>
           )}
 
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end sm:gap-3">
             <button
               type="button"
               onClick={onClose}

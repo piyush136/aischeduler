@@ -6,6 +6,27 @@ if (!apiKey) {
   throw new Error('GEMINI_API_KEY is required');
 }
 
+function getLlmErrorMessage(error) {
+  const status = error?.response?.status;
+  const retryAfter = error?.response?.headers?.['retry-after'];
+  const providerMessage = error?.response?.data?.error?.message || error?.response?.data?.message;
+
+  if (status === 429) {
+    const retryHint = retryAfter ? ` Please try again after ${retryAfter} second(s).` : ' Please wait a moment and try again.';
+    return `The AI service is rate limited right now.${retryHint}`;
+  }
+
+  if (status >= 500) {
+    return 'The AI service is temporarily unavailable. Please try again in a moment.';
+  }
+
+  if (status === 401 || status === 403) {
+    return 'The AI service rejected the API key or permissions. Please check the server configuration.';
+  }
+
+  return providerMessage || 'I could not reach the AI service. Please try again.';
+}
+
 class LLMClient {
   constructor() {
     this.chatHistory = [];
@@ -217,7 +238,7 @@ class LLMClient {
       console.error('[Gemini] Error in run():', error.message);
       console.error('[Gemini] Error response:', error.response?.data);
       return {
-        text: `Error: ${error.message}`,
+        text: getLlmErrorMessage(error),
         toolCall: null
       };
     }
@@ -267,7 +288,7 @@ class LLMClient {
       this.chatHistory = this.convertGeminiToChatHistory(this.geminiHistory);
 
       return {
-        text: `I executed ${functionName}, but I couldn't finish the follow-up reasoning. Result: ${JSON.stringify(functionResult)}`,
+        text: functionResult?.message || getLlmErrorMessage(error),
         toolCall: null
       };
     }

@@ -39,6 +39,18 @@ function normalizeToolArgs(args = {}) {
 }
 
 function getApiErrorMessage(error, fallback = 'Request failed') {
+  const status = error?.response?.status;
+  const retryAfter = error?.response?.headers?.['retry-after'];
+
+  if (status === 429) {
+    const retryHint = retryAfter ? ` Please try again after ${retryAfter} second(s).` : ' Please wait a moment and try again.';
+    return `The service is receiving too many requests right now.${retryHint}`;
+  }
+
+  if (status >= 500) {
+    return 'The service is temporarily unavailable. Please try again in a moment.';
+  }
+
   return (
     error?.response?.data?.error ||
     error?.response?.data?.message ||

@@ -7,7 +7,7 @@ const {
   getApiErrorMessage
 } = require('./utils/runtime');
 
-const API_URL = process.env.BACKEND_URL;
+const { BACKEND_API_URL: API_URL } = require('../config/api');
 
 function formatPriority(priority) {
   if (priority === 1) return 'high';

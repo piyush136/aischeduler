@@ -4,6 +4,7 @@ import { Check, Trash2, Calendar, Clock, ChevronDown, ChevronUp, Plus, Edit2, X,
 import { format, isToday, isPast, isTomorrow, isWithinInterval, addDays, parseISO, nextMonday } from 'date-fns';
 import CopyToTeamModal from './CopyToTeamModal';
 import ActionDialog from './ActionDialog';
+import { apiUrl } from '../config/api';
 
 export default function TaskList({ token, view, searchQuery, onTaskUpdate, onAddTask, onEditTask }) {
   const [tasks, setTasks] = useState([]);
@@ -63,7 +64,7 @@ export default function TaskList({ token, view, searchQuery, onTaskUpdate, onAdd
 
   const fetchTasks = async () => {
     try {
-      const res = await axios.get('/api/tasks', {
+      const res = await axios.get(apiUrl('/tasks'), {
         headers: { Authorization: `Bearer ${token}` }
       });
       setTasks(res.data);
@@ -107,7 +108,7 @@ export default function TaskList({ token, view, searchQuery, onTaskUpdate, onAdd
       onConfirm: () => runDialogAction(async () => {
         try {
           if (task.isGoogleEvent) {
-            await axios.delete(`/api/calendar/events/${task._id}`, {
+            await axios.delete(apiUrl(`/calendar/events/${task._id}`), {
               headers: { Authorization: `Bearer ${token}` }
             });
             setTasks(prev => prev.filter(t => t._id !== task._id));
@@ -118,7 +119,7 @@ export default function TaskList({ token, view, searchQuery, onTaskUpdate, onAdd
           const newStatus = task.status === 'completed' ? 'pending' : 'completed';
           setTasks(prev => prev.map(t => t._id === task._id ? { ...t, status: newStatus } : t));
 
-          await axios.patch(`/api/tasks/${task._id}`, { status: newStatus }, {
+          await axios.patch(apiUrl(`/tasks/${task._id}`), { status: newStatus }, {
             headers: { Authorization: `Bearer ${token}` }
           });
 
@@ -153,11 +154,11 @@ export default function TaskList({ token, view, searchQuery, onTaskUpdate, onAdd
           setTasks(prev => prev.filter(t => t._id !== task._id));
 
           if (task.isGoogleEvent) {
-            await axios.delete(`/api/calendar/events/${task._id}`, {
+            await axios.delete(apiUrl(`/calendar/events/${task._id}`), {
               headers: { Authorization: `Bearer ${token}` }
             });
           } else {
-            await axios.delete(`/api/tasks/${task._id}`, {
+            await axios.delete(apiUrl(`/tasks/${task._id}`), {
               headers: { Authorization: `Bearer ${token}` }
             });
           }
@@ -175,7 +176,7 @@ export default function TaskList({ token, view, searchQuery, onTaskUpdate, onAdd
   const addSubtask = async (taskId) => {
     if (!newSubtaskTitle.trim()) return;
     try {
-      const res = await axios.post(`/api/tasks/${taskId}/subtasks`, 
+      const res = await axios.post(apiUrl(`/tasks/${taskId}/subtasks`), 
         { title: newSubtaskTitle },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -190,7 +191,7 @@ export default function TaskList({ token, view, searchQuery, onTaskUpdate, onAdd
     try {
       const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
       const res = await axios.patch(
-        `/api/tasks/${taskId}/subtasks/${subtaskId}`,
+        apiUrl(`/tasks/${taskId}/subtasks/${subtaskId}`),
         { status: newStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -208,7 +209,7 @@ export default function TaskList({ token, view, searchQuery, onTaskUpdate, onAdd
       onConfirm: () => runDialogAction(async () => {
         try {
           const res = await axios.delete(
-            `/api/tasks/${taskId}/subtasks/${subtaskId}`,
+            apiUrl(`/tasks/${taskId}/subtasks/${subtaskId}`),
             { headers: { Authorization: `Bearer ${token}` } }
           );
           setTasks(prev => prev.map(t => t._id === taskId ? res.data : t));
@@ -223,7 +224,7 @@ export default function TaskList({ token, view, searchQuery, onTaskUpdate, onAdd
 
   const postponeTask = async (taskId, newDate) => {
     try {
-      const res = await axios.patch(`/api/tasks/${taskId}/postpone`, { new_date: newDate }, {
+      const res = await axios.patch(apiUrl(`/tasks/${taskId}/postpone`), { new_date: newDate }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setTasks(prev => prev.map(t => t._id === taskId ? res.data : t));
@@ -239,7 +240,7 @@ export default function TaskList({ token, view, searchQuery, onTaskUpdate, onAdd
     try {
       const newStatus = !task.isPinned;
       setTasks(prev => prev.map(t => t._id === task._id ? { ...t, isPinned: newStatus } : t));
-      await axios.patch(`/api/tasks/${task._id}`, { isPinned: newStatus }, {
+      await axios.patch(apiUrl(`/tasks/${task._id}`), { isPinned: newStatus }, {
         headers: { Authorization: `Bearer ${token}` }
       });
     } catch (err) {
@@ -277,7 +278,7 @@ export default function TaskList({ token, view, searchQuery, onTaskUpdate, onAdd
     // 2. Filter by View
     if (view === 'today') {
         filteredTasks = tasks.filter(task => {
-            if (!task.due_at) return false;
+            if (!task.due_at) return task.status !== 'completed';
             const date = parseISO(task.due_at);
             return isToday(date) || (isPast(date) && task.status !== 'completed');
         });
@@ -318,7 +319,7 @@ export default function TaskList({ token, view, searchQuery, onTaskUpdate, onAdd
   if (view === 'today' && !searchQuery) {
       const allTodayAndPast = filteredTasks;
       filteredTasks = allTodayAndPast.filter(t => {
-          if (!t.due_at) return false;
+          if (!t.due_at) return true;
           return isToday(parseISO(t.due_at));
       });
       pastDueTasks = allTodayAndPast.filter(t => {
@@ -334,16 +335,16 @@ export default function TaskList({ token, view, searchQuery, onTaskUpdate, onAdd
     const completedSubtasks = task.subtasks?.filter(st => st.status === 'completed').length || 0;
 
     return (
-        <div key={task._id} className={`group relative overflow-hidden rounded-[28px] border bg-white/78 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur-xl ${task.isGoogleEvent ? 'border-sky-100/80' : 'border-white/70'} transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_30px_80px_rgba(146,87,255,0.14)] flex flex-col ${isExpanded ? 'col-span-1 md:col-span-2 lg:col-span-2' : ''} ${postponeMenu === task._id ? 'z-[150]' : 'z-10'}`}>
+        <div key={task._id} className={`group relative rounded-[22px] border bg-white/78 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:rounded-[28px] ${task.isGoogleEvent ? 'border-sky-100/80' : 'border-white/70'} transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_30px_80px_rgba(146,87,255,0.14)] flex min-w-0 flex-col ${postponeMenu === task._id ? 'z-[150] overflow-visible' : 'z-10 overflow-hidden'} ${isExpanded ? 'col-span-1 md:col-span-2 xl:col-span-2' : ''}`}>
           
           {/* Header */}
-          <div className="p-5 pb-3">
+          <div className="p-4 pb-3 sm:p-5 sm:pb-3">
             <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-r from-aurora-100/35 via-transparent to-primary-100/30 opacity-0 transition group-hover:opacity-100" />
-            <div className="flex items-start gap-4 flex-1">
+            <div className="flex flex-wrap items-start gap-3">
               {/* Checkbox */}
               <button 
                   onClick={() => toggleTask(task)}
-                  className={`flex-shrink-0 mt-0.5 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
+                  className={`order-1 mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200 ${
                       task.status === 'completed' 
                           ? 'bg-indigo-500 border-indigo-500 scale-95' 
                           : (task.isGoogleEvent ? 'border-blue-300 hover:border-blue-500 hover:bg-blue-50' : 'border-slate-300 hover:border-indigo-500')
@@ -354,7 +355,7 @@ export default function TaskList({ token, view, searchQuery, onTaskUpdate, onAdd
               </button>
 
               {/* Content */}
-              <div className={`flex-1 min-w-0 ${task.status === 'completed' ? 'opacity-50' : ''}`}>
+              <div className={`order-3 min-w-0 basis-full ${task.status === 'completed' ? 'opacity-50' : ''}`}>
                   {((!task.isGoogleEvent && task.priority >= 4) || task.isGoogleEvent || task.postponed_count > 0 || repeatIcon || task.isPinned) && (
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div className="flex-1 flex flex-wrap gap-1">
@@ -386,13 +387,13 @@ export default function TaskList({ token, view, searchQuery, onTaskUpdate, onAdd
                       </div>
                   )}
                   
-                  <h3 className={`text-base font-semibold text-slate-900 leading-snug ${task.status === 'completed' ? 'line-through text-slate-400' : ''}`}>
+                  <h3 className={`break-words text-base font-semibold leading-snug text-slate-900 ${task.status === 'completed' ? 'line-through text-slate-400' : ''}`}>
                       {task.title}
                   </h3>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0 mt-0.5">
+              <div className="order-2 ml-auto flex flex-wrap items-center justify-end gap-1 sm:mt-0.5 sm:flex-shrink-0 sm:flex-nowrap">
 
               {/* Expand/Collapse Button */}
               <button
@@ -416,7 +417,7 @@ export default function TaskList({ token, view, searchQuery, onTaskUpdate, onAdd
                   {/* Postpone Popover */}
                   {postponeMenu === task._id && (
                     <>
-                      <div className="absolute right-0 top-full mt-2 w-60 rounded-[24px] border border-white/70 bg-white/92 p-2 shadow-[0_24px_70px_rgba(15,23,42,0.18)] backdrop-blur-2xl z-[200] animate-in fade-in slide-in-from-top-2" onClick={e => e.stopPropagation()}>
+                      <div className="absolute right-auto left-0 top-full z-[200] mt-2 w-60 max-w-[calc(100vw-2rem)] rounded-[24px] border border-white/70 bg-white/95 p-2 shadow-[0_24px_70px_rgba(15,23,42,0.18)] backdrop-blur-2xl animate-in fade-in slide-in-from-top-2 sm:left-auto sm:right-0" onClick={e => e.stopPropagation()}>
                         <div className="px-3 py-2 border-b border-slate-100 mb-1">
                           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Postpone to</p>
                         </div>
@@ -506,7 +507,7 @@ export default function TaskList({ token, view, searchQuery, onTaskUpdate, onAdd
 
             {/* Date/Time Info */}
             {task.due_at && (
-                <div className="mt-3 flex flex-wrap items-center gap-3 pl-10 text-xs text-slate-500">
+                <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500 sm:gap-3 sm:pl-10">
                     <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 bg-slate-50 ${isToday(parseISO(task.due_at)) ? 'bg-emerald-50 text-emerald-600 font-medium' : ''}`}>
                         <Calendar size={13} />
                         {isToday(parseISO(task.due_at)) ? 'Today' : format(parseISO(task.due_at), 'MMM d')}
@@ -519,11 +520,19 @@ export default function TaskList({ token, view, searchQuery, onTaskUpdate, onAdd
                     )}
                 </div>
             )}
+            {!task.due_at && (
+                <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500 sm:gap-3 sm:pl-10">
+                    <span className="flex items-center gap-1.5 rounded-full bg-slate-50 px-2.5 py-1 font-medium text-slate-500">
+                        <Calendar size={13} />
+                        Unscheduled
+                    </span>
+                </div>
+            )}
           </div>
 
           {/* Expanded Content - Sub-tasks */}
           {isExpanded && (
-            <div className="space-y-3 border-t border-white/70 px-5 pb-4 pt-4 bg-white/36">
+            <div className="space-y-3 border-t border-white/70 bg-white/36 px-4 pb-4 pt-4 sm:px-5">
               
               {/* Sub-tasks List */}
               {subtaskCount > 0 && (
@@ -545,7 +554,7 @@ export default function TaskList({ token, view, searchQuery, onTaskUpdate, onAdd
                       >
                         {subtask.status === 'completed' && <Check size={12} className="text-white" />}
                       </button>
-                      <span className={`flex-1 text-sm ${subtask.status === 'completed' ? 'line-through text-slate-400' : 'text-slate-700'}`}>
+                      <span className={`min-w-0 flex-1 break-words text-sm ${subtask.status === 'completed' ? 'line-through text-slate-400' : 'text-slate-700'}`}>
                         {subtask.title}
                       </span>
                       <button
@@ -560,7 +569,7 @@ export default function TaskList({ token, view, searchQuery, onTaskUpdate, onAdd
               )}
 
               {/* Add New Sub-task */}
-              <div className="flex gap-2 border-t border-white/60 pt-2">
+              <div className="flex flex-col gap-2 border-t border-white/60 pt-2 sm:flex-row">
                 <input
                   type="text"
                   value={expandedTask === task._id ? newSubtaskTitle : ''}
@@ -586,9 +595,9 @@ export default function TaskList({ token, view, searchQuery, onTaskUpdate, onAdd
   return (
     <div className="flex flex-col">
       {/* View Filters */}
-      <div className="mb-5 flex w-full flex-wrap items-center justify-between gap-3 rounded-[26px] border border-white/70 bg-white/70 p-3 shadow-sm backdrop-blur-xl">
-         <div className="flex items-center gap-2">
-             <div className="relative">
+      <div className="mb-5 flex w-full flex-col gap-3 rounded-[22px] border border-white/70 bg-white/70 p-3 shadow-sm backdrop-blur-xl sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:rounded-[26px]">
+         <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:items-center">
+             <div className="relative min-w-0 sm:min-w-40">
                  <select 
                     value={priorityFilter} 
                     onChange={(e) => setPriorityFilter(e.target.value)}
@@ -600,7 +609,7 @@ export default function TaskList({ token, view, searchQuery, onTaskUpdate, onAdd
                  </select>
                  <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
              </div>
-             <div className="relative">
+             <div className="relative min-w-0 sm:min-w-40">
                  <select 
                     value={timeSort} 
                     onChange={(e) => setTimeSort(e.target.value)}
@@ -614,7 +623,7 @@ export default function TaskList({ token, view, searchQuery, onTaskUpdate, onAdd
          </div>
          <button
            onClick={() => setLayoutMode(prev => prev === 'grid' ? 'list' : 'grid')}
-           className="flex cursor-pointer items-center justify-center rounded-2xl border border-white/70 bg-white/80 p-2 text-slate-500 shadow-sm transition-all hover:bg-white hover:text-aurora-600"
+           className="flex cursor-pointer items-center justify-center rounded-2xl border border-white/70 bg-white/80 p-2 text-slate-500 shadow-sm transition-all hover:bg-white hover:text-aurora-600 sm:w-auto"
            title={layoutMode === 'grid' ? "Switch to Stacked View" : "Switch to Grid View"}
          >
            {layoutMode === 'grid' ? <List size={20} /> : <LayoutGrid size={20} />}
@@ -623,7 +632,7 @@ export default function TaskList({ token, view, searchQuery, onTaskUpdate, onAdd
 
      {/* Past Due Folded Section */}
      {view === 'today' && !searchQuery && pastDueTasks.length > 0 && (
-         <div className="mb-6 overflow-hidden rounded-[28px] border border-rose-100 bg-rose-50/60 shadow-sm backdrop-blur-xl">
+         <div className={`mb-6 rounded-[28px] border border-rose-100 bg-rose-50/60 shadow-sm backdrop-blur-xl ${postponeMenu ? 'overflow-visible' : 'overflow-hidden'}`}>
             <button 
                 onClick={() => setShowPastDue(!showPastDue)}
                 className={`flex w-full items-center justify-between bg-rose-50/70 p-4 text-rose-700 transition-colors hover:bg-rose-100 ${showPastDue ? 'rounded-t-[28px]' : 'rounded-[28px]'}`}
@@ -635,7 +644,7 @@ export default function TaskList({ token, view, searchQuery, onTaskUpdate, onAdd
                 {showPastDue ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
             </button>
             {showPastDue && (
-                <div className={`p-4 grid gap-4 border-t border-rose-100/50 ${layoutMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
+                <div className={`grid gap-4 border-t border-rose-100/50 p-3 sm:p-4 ${layoutMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3' : 'grid-cols-1'}`}>
                      {pastDueTasks.map(task => renderTaskCard(task))}
                 </div>
             )}
@@ -643,9 +652,9 @@ export default function TaskList({ token, view, searchQuery, onTaskUpdate, onAdd
      )}
 
       {/* Main Task Grid */}
-      <div className={`relative grid w-full gap-5 ${layoutMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
+      <div className={`relative grid w-full gap-4 sm:gap-5 ${layoutMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3' : 'grid-cols-1'}`}>
         {filteredTasks.length === 0 && pastDueTasks.length === 0 && (
-            <div className="col-span-full flex flex-col items-center justify-center rounded-[30px] border border-white/70 bg-white/68 py-20 opacity-80 shadow-sm backdrop-blur-xl">
+            <div className="col-span-full flex flex-col items-center justify-center rounded-[24px] border border-white/70 bg-white/68 px-4 py-14 text-center opacity-80 shadow-sm backdrop-blur-xl sm:rounded-[30px] sm:py-20">
                 <div className="mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-aurora-100 to-primary-100">
                    <Check size={40} className="text-aurora-400" />
                 </div>

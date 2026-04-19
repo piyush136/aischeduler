@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Calendar, ChevronDown, ChevronUp, Clock, Plus, Sparkles, X } from 'lucide-react';
 import { format } from 'date-fns';
 import ActionDialog from './ActionDialog';
+import { apiUrl } from '../config/api';
 
 export default function AddTaskModal({ isOpen, onClose, onTaskAdded, token, initialDate, teamId, teamMembers, editingTask, preAssigned }) {
   const [title, setTitle] = useState('');
@@ -98,11 +99,11 @@ export default function AddTaskModal({ isOpen, onClose, onTaskAdded, token, init
       }
 
       if (editingTask) {
-        await axios.patch(`/api/tasks/${editingTask._id}`, taskPayload, {
+        await axios.patch(apiUrl(`/tasks/${editingTask._id}`), taskPayload, {
           headers: { Authorization: `Bearer ${token}` }
         });
       } else {
-        await axios.post('/api/tasks', taskPayload, {
+        await axios.post(apiUrl('/tasks'), taskPayload, {
           headers: { Authorization: `Bearer ${token}` }
         });
       }
@@ -140,39 +141,39 @@ export default function AddTaskModal({ isOpen, onClose, onTaskAdded, token, init
   };
 
   return (
-    <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-950/45 px-4 py-4 backdrop-blur-md">
-      <div className="relative flex h-[calc(100vh-2rem)] max-h-[calc(100vh-2rem)] w-full max-w-2xl flex-col overflow-hidden rounded-[34px] border border-white/60 bg-white/72 shadow-[0_35px_120px_rgba(15,23,42,0.28)] backdrop-blur-2xl">
+    <div className="fixed inset-0 z-[4000] flex items-stretch justify-center bg-slate-950/45 p-2 backdrop-blur-md sm:items-center sm:p-4">
+      <div className="relative flex h-full max-h-[100dvh] w-full max-w-3xl flex-col overflow-hidden rounded-[24px] border border-white/60 bg-white/72 shadow-[0_35px_120px_rgba(15,23,42,0.28)] backdrop-blur-2xl sm:h-auto sm:max-h-[calc(100dvh-2rem)] sm:rounded-[34px]">
         <div className="absolute -right-12 top-0 h-36 w-36 rounded-full bg-primary-300/28 blur-3xl" />
         <div className="absolute left-0 top-0 h-28 w-28 rounded-full bg-aurora-300/28 blur-3xl" />
 
-        <div className="relative flex items-center justify-between border-b border-white/60 px-5 py-3">
-          <div>
+        <div className="relative flex shrink-0 items-center justify-between gap-3 border-b border-white/60 px-4 py-3 sm:px-5">
+          <div className="min-w-0">
             <div className="premium-chip mb-1">
               <Sparkles size={14} className="text-primary-500" />
               {editingTask ? 'Edit task' : 'Create task'}
             </div>
-            <h2 className="text-lg font-semibold text-slate-950">{editingTask ? 'Edit Task' : 'New Task'}</h2>
+            <h2 className="truncate text-lg font-semibold text-slate-950 sm:text-xl">{editingTask ? 'Edit Task' : 'New Task'}</h2>
           </div>
-          <button onClick={onClose} className="rounded-2xl border border-white/60 bg-white/70 p-2.5 text-slate-500 transition hover:bg-white hover:text-slate-800">
+          <button type="button" onClick={onClose} className="shrink-0 rounded-2xl border border-white/60 bg-white/70 p-2.5 text-slate-500 transition hover:bg-white hover:text-slate-800">
             <X size={18} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="relative flex flex-1 flex-col px-5 py-3">
-          <div className="space-y-3">
+        <form onSubmit={handleSubmit} className="relative flex min-h-0 flex-1 flex-col">
+          <div className="flex-1 space-y-3 overflow-y-auto px-4 py-3 sm:px-5 sm:py-4">
             <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Task Title</label>
-            <input
-              autoFocus
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g., Prepare physics revision plan"
-              className="premium-input"
-              required
-            />
-          </div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">Task Title</label>
+              <input
+                autoFocus
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g., Prepare physics revision plan"
+                className="premium-input"
+                required
+              />
+            </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700">Due Date</label>
                 <div className="relative">
@@ -205,13 +206,13 @@ export default function AddTaskModal({ isOpen, onClose, onTaskAdded, token, init
 
             <div>
               <label className="mb-1 block text-sm font-medium text-slate-700">Priority</label>
-              <div className="grid grid-cols-5 gap-1.5">
+              <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-5">
                 {[1, 2, 3, 4, 5].map((p) => (
                   <button
                     key={p}
                     type="button"
                     onClick={() => setPriority(p)}
-                    className={`rounded-2xl border px-3 py-2 text-sm font-semibold transition ${
+                    className={`min-h-11 rounded-2xl border px-2 py-2 text-sm font-semibold transition sm:px-3 ${
                       priority === p
                         ? 'border-transparent bg-aurora-gradient text-white shadow-[0_18px_45px_rgba(95,120,246,0.22)]'
                         : 'border-white/70 bg-white/75 text-slate-600 hover:bg-white'
@@ -223,9 +224,9 @@ export default function AddTaskModal({ isOpen, onClose, onTaskAdded, token, init
               </div>
             </div>
 
-          <div className="rounded-[28px] border border-white/65 bg-white/62 p-3 shadow-sm">
-            <div className={`${teamId && teamMembers && teamMembers.length > 0 ? 'grid gap-3 md:grid-cols-2' : ''}`}>
-              <div>
+            <div className="rounded-[24px] border border-white/65 bg-white/62 p-3 shadow-sm sm:rounded-[28px]">
+              <div className={`${teamId && teamMembers && teamMembers.length > 0 ? 'grid gap-3 md:grid-cols-2' : ''}`}>
+                <div>
                   <label className="mb-1 block text-sm font-medium text-slate-700">Repeat</label>
                   <select value={repeat} onChange={(e) => setRepeat(e.target.value)} className="premium-input">
                     <option value="never">Never</option>
@@ -251,7 +252,7 @@ export default function AddTaskModal({ isOpen, onClose, onTaskAdded, token, init
                     </button>
 
                     {showAssignDropdown && (
-                      <div className="absolute z-[2100] mt-2 w-full overflow-hidden rounded-[24px] border border-white/70 bg-white/92 p-2 shadow-[0_18px_60px_rgba(15,23,42,0.18)] backdrop-blur-xl">
+                      <div className="absolute left-0 right-0 z-[4100] mt-2 max-h-[45dvh] overflow-hidden rounded-[24px] border border-white/70 bg-white/95 p-2 shadow-[0_18px_60px_rgba(15,23,42,0.18)] backdrop-blur-xl">
                         <div className="max-h-48 space-y-1 overflow-y-auto">
                           {teamMembers.map((member) => (
                             <label key={member.user_id} className="flex cursor-pointer items-center gap-3 rounded-2xl px-3 py-2.5 transition hover:bg-slate-50">
@@ -270,15 +271,15 @@ export default function AddTaskModal({ isOpen, onClose, onTaskAdded, token, init
                   </div>
                 )}
               </div>
-          </div>
+            </div>
 
-            <div className="rounded-[28px] border border-white/65 bg-white/62 p-3 shadow-sm">
+            <div className="rounded-[24px] border border-white/65 bg-white/62 p-3 shadow-sm sm:rounded-[28px]">
               <div className="mb-2 flex items-center justify-between">
                 <label className="text-sm font-medium text-slate-700">Sub-tasks</label>
                 <span className="text-xs uppercase tracking-[0.2em] text-slate-400">{subtasks.length} items</span>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row">
                 <input
                   type="text"
                   value={newSubtask}
@@ -292,7 +293,7 @@ export default function AddTaskModal({ isOpen, onClose, onTaskAdded, token, init
                   placeholder="Add a smaller step..."
                   className="premium-input"
                 />
-                <button type="button" onClick={addSubtask} className="rounded-2xl bg-aurora-gradient px-4 py-2 text-white transition hover-glow">
+                <button type="button" onClick={addSubtask} className="flex min-h-11 items-center justify-center rounded-2xl bg-aurora-gradient px-4 py-2 text-white transition hover-glow sm:w-14">
                   <Plus size={16} />
                 </button>
               </div>
@@ -300,9 +301,9 @@ export default function AddTaskModal({ isOpen, onClose, onTaskAdded, token, init
               {subtasks.length > 0 && (
                 <div className="mt-2 grid gap-2">
                   {subtasks.map((subtask, idx) => (
-                    <div key={idx} className="flex items-center justify-between rounded-[20px] border border-white/70 bg-white/75 px-4 py-1.5">
+                    <div key={idx} className="flex items-center justify-between gap-3 rounded-[20px] border border-white/70 bg-white/75 px-3 py-2 sm:px-4">
                       <span className="truncate pr-3 text-sm font-medium text-slate-700">{typeof subtask === 'string' ? subtask : subtask.title}</span>
-                      <button type="button" onClick={() => removeSubtask(idx)} className="text-xs font-semibold uppercase tracking-[0.18em] text-rosefire-600 transition hover:text-rosefire-700">
+                      <button type="button" onClick={() => removeSubtask(idx)} className="shrink-0 text-xs font-semibold uppercase tracking-[0.18em] text-rosefire-600 transition hover:text-rosefire-700">
                         Remove
                       </button>
                     </div>
@@ -312,13 +313,15 @@ export default function AddTaskModal({ isOpen, onClose, onTaskAdded, token, init
             </div>
           </div>
 
-          <div className="mt-auto flex items-center justify-end gap-3 border-t border-white/60 pt-2">
-            <button type="button" onClick={onClose} className="rounded-[20px] border border-white/70 bg-white/70 px-5 py-2 text-sm font-semibold text-slate-600 transition hover:bg-white">
+          <div className="shrink-0 border-t border-white/60 bg-white/50 px-4 py-3 sm:px-5">
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
+            <button type="button" onClick={onClose} className="min-h-11 rounded-[20px] border border-white/70 bg-white/70 px-5 py-2 text-sm font-semibold text-slate-600 transition hover:bg-white sm:min-w-28">
               Cancel
             </button>
-            <button type="submit" disabled={loading} className="rounded-[20px] bg-aurora-gradient px-6 py-2 text-sm font-semibold text-white transition hover-glow disabled:opacity-60">
+            <button type="submit" disabled={loading} className="min-h-11 rounded-[20px] bg-aurora-gradient px-6 py-2 text-sm font-semibold text-white transition hover-glow disabled:opacity-60 sm:min-w-36">
               {loading ? 'Saving...' : editingTask ? 'Update Task' : 'Create Task'}
             </button>
+            </div>
           </div>
         </form>
       </div>

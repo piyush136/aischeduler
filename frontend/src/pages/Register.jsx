@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { ArrowRight, CheckCircle, Lock, Mail, Sparkles } from 'lucide-react';
 import ActionDialog from '../components/ActionDialog';
+import { apiUrl } from '../config/api';
 
 export default function Register({ setAuth }) {
   const [name, setName] = useState('');
@@ -27,7 +28,7 @@ export default function Register({ setAuth }) {
     setLoading(true);
     setError('');
     try {
-      const res = await axios.post('/api/auth/register', { name, email, password });
+      const res = await axios.post(apiUrl('/auth/register'), { name, email, password });
       setAuth(res.data.token, res.data.user);
     } catch (err) {
       setError(err.response?.data?.error || 'Registration failed');
@@ -38,7 +39,7 @@ export default function Register({ setAuth }) {
 
   const handleGoogleSignup = async () => {
     try {
-      const res = await axios.get('/api/calendar/auth');
+      const res = await axios.get(apiUrl('/calendar/auth'));
       window.location.href = res.data.url;
     } catch (e) {
       showNotice('error', 'Google sign-up unavailable', 'Google authentication is not fully configured right now.', { autoCloseMs: 3200 });
@@ -46,12 +47,12 @@ export default function Register({ setAuth }) {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-4">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-3 py-4 sm:px-4">
       <div className="absolute left-0 top-6 h-72 w-72 rounded-full bg-primary-300/28 blur-3xl" />
       <div className="absolute bottom-0 right-10 h-80 w-80 rounded-full bg-aurora-300/26 blur-3xl" />
 
       <div className="grid w-full max-w-6xl gap-6 lg:grid-cols-[1.02fr_0.98fr]">
-        <div className="surface-card relative overflow-hidden p-7 md:p-8">
+        <div className="surface-card relative overflow-hidden p-5 sm:p-7 md:p-8">
           <div className="absolute right-6 top-6 hidden rounded-full border border-white/70 bg-white/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-slate-400 md:block">
             New account
           </div>
@@ -61,7 +62,7 @@ export default function Register({ setAuth }) {
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-aurora-gradient text-xl font-black text-white lg:mx-0">
                 A
               </div>
-              <h2 className="mt-4 text-3xl font-semibold text-slate-950">Create your workspace</h2>
+              <h2 className="mt-4 text-2xl font-semibold text-slate-950 sm:text-3xl">Create your workspace</h2>
               <p className="mt-2 text-sm text-slate-500 md:text-base">Start with a premium planning environment from day one.</p>
             </div>
 
@@ -83,8 +84,8 @@ export default function Register({ setAuth }) {
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-slate-200/80" />
               </div>
-              <div className="relative flex justify-center text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-                <span className="bg-white/70 px-4 backdrop-blur-xl">Or sign up with email</span>
+              <div className="relative flex justify-center text-center text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 sm:text-xs sm:tracking-[0.24em]">
+                <span className="bg-white/70 px-3 backdrop-blur-xl sm:px-4">Or sign up with email</span>
               </div>
             </div>
 

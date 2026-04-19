@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
+import { apiUrl } from '../config/api';
 import {
   Calendar,
   CheckCircle,
@@ -66,6 +67,7 @@ export default function Dashboard({ token, user, logout, updateUser }) {
   const [teamForTask, setTeamForTask] = useState(null);
   const [teamMembersForTask, setTeamMembersForTask] = useState([]);
   const [preAssignedUser, setPreAssignedUser] = useState(null);
+  const [messageOpenRequest, setMessageOpenRequest] = useState(null);
   const [dialogState, setDialogState] = useState(null);
   const profileMenuRef = useRef(null);
 
@@ -82,13 +84,13 @@ export default function Dashboard({ token, user, logout, updateUser }) {
   useEffect(() => {
     NotificationService.requestPermission();
 
-    axios.get('/api/calendar/status', { headers: { Authorization: `Bearer ${token}` } })
+    axios.get(apiUrl('/calendar/status'), { headers: { Authorization: `Bearer ${token}` } })
       .then((res) => setIsConnected(res.data.connected))
       .catch(console.error);
 
     const fetchAllTasks = async () => {
       try {
-        const res = await axios.get('/api/tasks', { headers: { Authorization: `Bearer ${token}` } });
+        const res = await axios.get(apiUrl('/tasks'), { headers: { Authorization: `Bearer ${token}` } });
         setTasks(res.data);
         TimeNotificationService.sync(res.data);
       } catch (err) {
@@ -98,7 +100,7 @@ export default function Dashboard({ token, user, logout, updateUser }) {
 
     const fetchUnreadCount = async () => {
       try {
-        const res = await axios.get('/api/notifications/unread-count', { headers: { Authorization: `Bearer ${token}` } });
+        const res = await axios.get(apiUrl('/notifications/unread-count'), { headers: { Authorization: `Bearer ${token}` } });
         setUnreadCount(res.data.count || 0);
       } catch (err) {
         console.error('Failed to fetch unread count', err);
@@ -134,7 +136,7 @@ export default function Dashboard({ token, user, logout, updateUser }) {
 
   const handleConnect = async () => {
     try {
-      const res = await axios.get('/api/calendar/auth');
+      const res = await axios.get(apiUrl('/calendar/auth'));
       window.location.href = res.data.url;
     } catch (err) {
       console.error(err);
@@ -144,7 +146,7 @@ export default function Dashboard({ token, user, logout, updateUser }) {
 
   const handleDisconnect = async () => {
     try {
-      await axios.post('/api/calendar/disconnect', {}, {
+      await axios.post(apiUrl('/calendar/disconnect'), {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setIsConnected(false);
@@ -157,7 +159,7 @@ export default function Dashboard({ token, user, logout, updateUser }) {
 
   const handleDeleteTask = async (id) => {
     try {
-      await axios.delete(`/api/tasks/${id}`, {
+      await axios.delete(apiUrl(`/tasks/${id}`), {
         headers: { Authorization: `Bearer ${token}` }
       });
       refreshTasks();
@@ -195,7 +197,35 @@ export default function Dashboard({ token, user, logout, updateUser }) {
 
     if (activeView === 'weather') return <WeatherWidget />;
     if (activeView === 'profile') return <UserProfile token={token} onProfileUpdate={updateUser} />;
-    if (activeView === 'inbox') return <InboxView token={token} />;
+    if (activeView === 'inbox') {
+      return (
+        <InboxView
+          token={token}
+          onOpenNotification={(notification) => {
+            if (notification.type !== 'team_message' || !notification.team_id) return;
+
+            const teamRef = notification.team_id;
+            const teamId = teamRef._id || teamRef;
+            const actorRef = notification.actor_id;
+            const actorName = actorRef?.name || actorRef?.email || String(notification.message || '').split(' sent you a message:')[0] || '';
+            const isTeamMessage = notification.conversation_type === 'team' || String(notification.message || '').includes('sent a team message');
+            setActiveTeam({
+              _id: teamId,
+              team_id: teamId,
+              name: teamRef.name || 'Team'
+            });
+            setMessageOpenRequest({
+              nonce: Date.now(),
+              type: isTeamMessage ? 'team' : 'direct',
+              userId: actorRef?._id || actorRef || null,
+              actorName
+            });
+            setActiveView('teams');
+            setIsMobileMenuOpen(false);
+          }}
+        />
+      );
+    }
 
     if (activeView === 'teams') {
       return activeTeam ? (
@@ -204,6 +234,7 @@ export default function Dashboard({ token, user, logout, updateUser }) {
           token={token}
           team={activeTeam}
           user={user}
+          initialMessageTarget={messageOpenRequest}
           onBack={() => setActiveTeam(null)}
           onCreateTask={(team, members, specificUserId = null) => {
             setTeamForTask(team);
@@ -240,7 +271,7 @@ export default function Dashboard({ token, user, logout, updateUser }) {
   };
 
   return (
-    <div className="relative flex min-h-screen bg-transparent text-slate-900 md:gap-6">
+    <div className="relative min-h-screen bg-transparent text-slate-900">
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -left-20 top-10 h-72 w-72 rounded-full bg-aurora-300/20 blur-3xl" />
         <div className="absolute right-0 top-16 h-80 w-80 rounded-full bg-primary-300/18 blur-3xl" />
@@ -256,9 +287,9 @@ export default function Dashboard({ token, user, logout, updateUser }) {
       )}
 
       <aside
-        className={`fixed inset-y-4 left-4 z-[3100] flex w-[292px] flex-col rounded-[30px] glass-dark p-3 transition-transform duration-300 md:translate-x-0 ${
+        className={`fixed inset-y-3 left-3 z-[3100] flex w-[min(292px,calc(100vw-1.5rem))] flex-col rounded-[26px] glass-dark p-3 transition-transform duration-300 sm:inset-y-4 sm:left-4 sm:rounded-[30px] md:translate-x-0 ${
           isMobileMenuOpen ? 'translate-x-0' : '-translate-x-[120%]'
-        } md:sticky md:top-4 md:h-[calc(100vh-2rem)]`}
+        } md:h-[calc(100vh-2rem)] md:w-[292px]`}
       >
         <div className="flex items-center justify-between px-2 pb-4 pt-2" ref={profileMenuRef}>
           <button
@@ -451,33 +482,33 @@ export default function Dashboard({ token, user, logout, updateUser }) {
         </div>
       </aside>
 
-      <main className="relative z-10 flex-1 px-4 py-4 md:pl-0">
+      <main className="relative z-10 min-w-0 px-2 py-3 sm:px-4 sm:py-4 md:pl-[324px]">
         <div className="mx-auto flex max-w-[1500px] flex-col gap-4">
-          <div className="surface-card flex items-center justify-between px-5 py-4 md:hidden">
+          <div className="surface-card flex items-center justify-between gap-3 px-3 py-3 sm:px-5 sm:py-4 md:hidden">
             <button type="button" onClick={() => setIsMobileMenuOpen(true)} className="rounded-xl p-2 text-slate-700">
               <Menu size={22} />
             </button>
-            <div className="text-center">
+            <div className="min-w-0 text-center">
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Workspace</p>
-              <h1 className="text-base font-semibold text-slate-900">{sectionTitle(activeView, activeTeam)}</h1>
+              <h1 className="truncate text-base font-semibold text-slate-900">{sectionTitle(activeView, activeTeam)}</h1>
             </div>
             <div className="w-10" />
           </div>
 
-          <div className="surface-card overflow-hidden">
-            <div className="border-b border-white/65 px-6 py-6 md:px-8">
+          <div className="surface-card overflow-visible">
+            <div className="border-b border-white/65 px-4 py-5 sm:px-6 sm:py-6 md:px-8">
               <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-                <div>
+                <div className="min-w-0">
                   <div className="premium-chip mb-4">
                     {activeView === 'today' ? 'Today' : activeView === 'teams' ? 'Teams' : sectionTitle(activeView, activeTeam)}
                   </div>
-                  <h1 className="text-3xl font-semibold tracking-tight text-slate-950 md:text-4xl">
+                  <h1 className="break-words text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl md:text-4xl">
                     {searchQuery ? `Results for "${searchQuery}"` : sectionTitle(activeView, activeTeam)}
                   </h1>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3 lg:justify-end">
-                  <div className="rounded-[22px] border border-white/70 bg-white/70 px-4 py-3 text-sm font-medium text-slate-500 shadow-sm">
+                <div className="grid w-full grid-cols-1 gap-3 sm:flex sm:flex-wrap sm:items-center lg:w-auto lg:justify-end">
+                  <div className="rounded-[22px] border border-white/70 bg-white/70 px-4 py-3 text-center text-sm font-medium text-slate-500 shadow-sm sm:text-left">
                     {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
                   </div>
                   {activeView !== 'teams' && (
@@ -495,7 +526,7 @@ export default function Dashboard({ token, user, logout, updateUser }) {
                           setEditingTask(null);
                           openTaskModal(new Date());
                         }}
-                        className="inline-flex items-center gap-2 rounded-[22px] bg-aurora-gradient px-5 py-3 text-sm font-semibold text-white transition hover-glow"
+                        className="inline-flex items-center justify-center gap-2 rounded-[22px] bg-aurora-gradient px-5 py-3 text-sm font-semibold text-white transition hover-glow"
                       >
                         <Plus size={16} />
                         Add Task
@@ -506,7 +537,7 @@ export default function Dashboard({ token, user, logout, updateUser }) {
               </div>
             </div>
 
-            <div className="px-4 py-5 md:px-6 md:py-6">
+            <div className="px-3 py-4 sm:px-4 sm:py-5 md:px-6 md:py-6">
               {renderMainContent()}
             </div>
           </div>
@@ -522,7 +553,7 @@ export default function Dashboard({ token, user, logout, updateUser }) {
           refreshTasks();
           setIsModalOpen(false);
           setEditingTask(null);
-          axios.get('/api/notifications/unread-count', { headers: { Authorization: `Bearer ${token}` } })
+          axios.get(apiUrl('/notifications/unread-count'), { headers: { Authorization: `Bearer ${token}` } })
             .then((res) => setUnreadCount(res.data.count || 0))
             .catch(() => {});
         }}

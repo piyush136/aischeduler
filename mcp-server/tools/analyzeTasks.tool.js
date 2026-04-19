@@ -2,7 +2,7 @@ const axios = require('axios');
 const { getReferenceDate } = require('./utils/dateTime');
 const { buildAuthHeaders, getApiErrorMessage } = require('./utils/runtime');
 
-const API_URL = process.env.BACKEND_URL;
+const { BACKEND_API_URL: API_URL } = require('../config/api');
 
 const analyzeTasks = {
   name: 'analyze_tasks',

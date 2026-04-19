@@ -2,6 +2,7 @@ const userService = require('../services/user.service');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { OAuth2Client } = require('google-auth-library');
+const { frontendUrl } = require('../config/api');
 
 exports.register = async (req, res) => {
   try {
@@ -131,8 +132,7 @@ exports.googleCallback = async (req, res) => {
         // The Redirect URI is what Google sends the code TO.
         // If Google sends code to Backend (5000), Backend can redirect current user to Frontend (5173).
         
-        const frontendUrl = `http://localhost:5173/calendar/callback?code=${code}`;
-        res.redirect(frontendUrl);
+        res.redirect(frontendUrl(`calendar/callback?code=${encodeURIComponent(code)}`));
         
     } catch (err) {
         console.error('Google Callback Error:', err);

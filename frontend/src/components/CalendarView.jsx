@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { apiUrl } from '../config/api';
 import { 
   startOfMonth, endOfMonth, startOfWeek, endOfWeek, 
   eachDayOfInterval, format, isSameMonth, isSameDay, 
@@ -31,7 +32,7 @@ export default function CalendarView({ token, onDeleteTask, onAddTask }) {
   const fetchEvents = async () => {
     try {
       // Fetch range: startDate to endDate
-      const res = await axios.get('/api/calendar/events', {
+      const res = await axios.get(apiUrl('/calendar/events'), {
         params: { 
             start: startDate.toISOString(), 
             end: endDate.toISOString() 
@@ -52,10 +53,10 @@ export default function CalendarView({ token, onDeleteTask, onAddTask }) {
   const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-visible">
+    <div className="overflow-visible rounded-2xl border border-slate-200 bg-white shadow-sm">
       {/* Header */}
-      <div className="flex items-center justify-between p-6 border-b border-slate-100">
-        <h2 className="text-xl font-bold text-slate-800">
+      <div className="flex items-center justify-between gap-3 border-b border-slate-100 p-4 sm:p-6">
+        <h2 className="min-w-0 truncate text-lg font-bold text-slate-800 sm:text-xl">
           {format(currentDate, 'MMMM yyyy')}
         </h2>
         <div className="flex gap-2">
@@ -70,7 +71,7 @@ export default function CalendarView({ token, onDeleteTask, onAddTask }) {
 
       {/* Scrollable Container for Grid */}
       <div className="overflow-x-auto">
-        <div className="min-w-[700px]">
+        <div className="min-w-[560px] sm:min-w-[700px]">
           {/* Grid Header */}
           <div className="grid grid-cols-7 bg-slate-50 border-b border-slate-200">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
@@ -90,7 +91,7 @@ export default function CalendarView({ token, onDeleteTask, onAddTask }) {
               return (
                 <div 
                   key={day.toISOString()}
-                  className={`min-h-[80px] md:min-h-[120px] border-b border-r border-slate-100 p-2 relative group transition-colors hover:bg-slate-50
+                  className={`group relative min-h-[84px] border-b border-r border-slate-100 p-1.5 transition-colors hover:bg-slate-50 sm:p-2 md:min-h-[120px]
                     ${!isCurrentMonth ? 'bg-slate-50/50 text-slate-400' : 'bg-white'}
                   `}
                   onMouseEnter={() => setHoveredDate(day)}

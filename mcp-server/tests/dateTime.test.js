@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { normalizeDueAt } = require('../tools/utils/dateTime');
+const { isPastDue, normalizeDueAt } = require('../tools/utils/dateTime');
 
 test('normalizeDueAt handles vague time phrases', () => {
   const meta = {
@@ -19,4 +19,14 @@ test('normalizeDueAt handles vague time phrases', () => {
   const dateOnly = normalizeDueAt('2026-04-18', meta);
   assert.equal(dateOnly.dueAt, '2026-04-18T00:00:00');
   assert.equal(dateOnly.hasTime, false);
+});
+
+test('isPastDue allows date-only today until the day is over', () => {
+  const meta = {
+    localDate: '2026-04-18',
+    localTimeString: '07:30:00 PM'
+  };
+
+  assert.equal(isPastDue('2026-04-18T00:00:00', meta, { hasTime: false }), false);
+  assert.equal(isPastDue('2026-04-18T09:00:00', meta, { hasTime: true }), true);
 });

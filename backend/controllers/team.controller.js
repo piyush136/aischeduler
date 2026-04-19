@@ -124,6 +124,45 @@ exports.getTeamTasks = async (req, res) => {
   }
 };
 
+exports.getTeamMessages = async (req, res) => {
+  try {
+    const { teamId } = req.params;
+    const userId = req.user.id;
+    const messages = await teamService.getTeamMessages(
+      teamId,
+      userId,
+      req.query.memberId,
+      req.query.limit,
+      req.query.conversationType
+    );
+    if (messages.error) {
+      return res.status(messages.status).json({ error: messages.error });
+    }
+    res.json(messages);
+  } catch (err) {
+    console.error('[TeamController] Get team messages error:', err);
+    res.status(500).json({ error: 'Failed to fetch team messages' });
+  }
+};
+
+exports.sendTeamMessage = async (req, res) => {
+  try {
+    const { teamId } = req.params;
+    const userId = req.user.id;
+    const { body, recipient_id, conversation_type } = req.body;
+
+    const message = await teamService.sendTeamMessage(teamId, userId, recipient_id, body, conversation_type);
+    if (message.error) {
+      return res.status(message.status).json({ error: message.error });
+    }
+
+    res.status(201).json(message);
+  } catch (err) {
+    console.error('[TeamController] Send team message error:', err);
+    res.status(500).json({ error: 'Failed to send team message' });
+  }
+};
+
 exports.acceptInvite = async (req, res) => {
   try {
     const userId = req.user.id;

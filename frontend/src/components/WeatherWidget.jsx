@@ -108,7 +108,7 @@ export default function WeatherWidget() {
     <div className="space-y-6">
 
       {/* ── Search bar ─────────────────────────────────────────────────────── */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+      <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:p-5">
         <h3 className="font-bold text-slate-700 text-lg mb-1 flex items-center gap-2">
           <MapPin size={20} className="text-blue-500" />
           7-Day Weather Forecast
@@ -116,7 +116,7 @@ export default function WeatherWidget() {
         <p className="text-sm text-slate-500 mb-4">
           Search any city to see the weekly forecast and decide the best day for outdoor tasks.
         </p>
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <div className="relative flex-1">
             <Search size={16} className="absolute left-3 top-3 text-slate-400" />
             <input
@@ -129,7 +129,7 @@ export default function WeatherWidget() {
           </div>
           <button
             onClick={fetchWeather} disabled={loading}
-            className="px-5 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold text-sm rounded-xl hover:from-blue-400 hover:to-indigo-500 disabled:opacity-60 shadow-md transition-all"
+            className="rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:from-blue-400 hover:to-indigo-500 disabled:opacity-60"
           >
             {loading
               ? <span className="flex items-center gap-2"><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/> Loading…</span>
@@ -142,19 +142,19 @@ export default function WeatherWidget() {
       {weather && (
         <>
           {/* ── Current conditions hero ─────────────────────────────────────── */}
-          <div className={`rounded-2xl bg-gradient-to-br ${gradientFor(nowCode)} p-6 text-white shadow-lg`}>
-            <div className="flex items-start justify-between mb-4">
-              <div>
+          <div className={`rounded-2xl bg-gradient-to-br ${gradientFor(nowCode)} p-4 text-white shadow-lg sm:p-6`}>
+            <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0">
                 <p className="text-blue-200 text-sm font-medium flex items-center gap-1 mb-1">
                   <MapPin size={14} /> {locName}
                 </p>
                 <h2 className="text-5xl font-black tracking-tight">{Math.round(nowTemp ?? 0)}°C</h2>
                 <p className="text-blue-200 mt-1 font-medium">{nowInfo.label}</p>
               </div>
-              <nowInfo.icon size={64} color={nowInfo.color} className="opacity-90 drop-shadow-lg" />
+              <nowInfo.icon size={64} color={nowInfo.color} className="self-start opacity-90 drop-shadow-lg sm:self-auto" />
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               {[
                 { Icon: Droplets,    label: 'Rain Chance', val: `${nowProb}%` },
                 { Icon: Wind,        label: 'Wind',        val: `${nowWind} km/h` },
@@ -180,9 +180,9 @@ export default function WeatherWidget() {
           </div>
 
           {/* ── 7-Day daily strip ────────────────────────────────────────────── */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+          <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:p-5">
             <h3 className="font-bold text-slate-700 mb-4 text-base">7-Day Forecast</h3>
-            <div className="grid grid-cols-7 gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
               {weather.daily.time.map((day, i) => {
                 const info  = getInfo(weather.daily.weathercode[i]);
                 const max   = Math.round(weather.daily.temperature_2m_max[i]);
@@ -216,7 +216,7 @@ export default function WeatherWidget() {
           </div>
 
           {/* ── Hourly strip for selected day ────────────────────────────────── */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+          <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:p-5">
             <h3 className="font-bold text-slate-700 mb-1 text-base">
               Hourly – {fmtDay(weather.daily.time[selectedDay])}
             </h3>

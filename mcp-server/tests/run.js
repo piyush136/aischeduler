@@ -92,6 +92,31 @@ function getChatHandler(router) {
     assert.equal(result.task.has_time, false);
   });
 
+  await run('add_task explains when a new task has no due date', async () => {
+    const tool = loadWithMocks(path.resolve(__dirname, '../tools/addTask.tool.js'), {
+      axios: {
+        post: async (url, body) => ({
+          data: {
+            _id: 'task-unscheduled',
+            title: body.title
+          }
+        })
+      }
+    });
+
+    const result = await tool.execute({
+      title: 'Deploy project',
+      _meta: {
+        localDate: '2026-04-18',
+        localTimeString: '07:30:00 PM'
+      }
+    }, 'token');
+
+    assert.equal(result.success, true);
+    assert.match(result.message, /without a due date/i);
+    assert.match(result.message, /today tasks/i);
+  });
+
   await run('fuzzy scoring handles typos and word reordering', async () => {
     const typo = scoreTask({ title: 'Gym Workout' }, 'jym');
     assert.ok(typo.score >= 50);
@@ -163,6 +188,65 @@ function getChatHandler(router) {
     const result = await tool.execute({ query: 'meting', offset_minutes: 10 }, 'token');
     assert.equal(result.success, true);
     assert.equal(result.reminder.task_id, 'task42');
+  });
+
+  await run('getApiErrorMessage explains HTTP 429 rate limits', async () => {
+    const { getApiErrorMessage } = require('../tools/utils/runtime');
+    const message = getApiErrorMessage({
+      response: {
+        status: 429,
+        headers: {
+          'retry-after': '30'
+        }
+      },
+      message: 'Request failed with status code 429'
+    });
+
+    assert.match(message, /too many requests/i);
+    assert.match(message, /30/);
+    assert.doesNotMatch(message, /Request failed with status code 429/i);
+  });
+
+  await run('llm client returns friendly message for Gemini 429 errors', async () => {
+    const previousApiKey = process.env.GEMINI_API_KEY;
+    process.env.GEMINI_API_KEY = 'test-key';
+
+    const clientPath = path.resolve(__dirname, '../llm/client.js');
+    delete require.cache[clientPath];
+
+    try {
+      const llmClient = loadWithMocks(clientPath, {
+        axios: {
+          post: async () => {
+            const error = new Error('Request failed with status code 429');
+            error.response = {
+              status: 429,
+              headers: {
+                'retry-after': '15'
+              },
+              data: {
+                error: {
+                  message: 'Quota exceeded'
+                }
+              }
+            };
+            throw error;
+          }
+        }
+      });
+
+      const result = await llmClient.run({ message: 'add task today', tools: [], history: [] });
+      assert.match(result.text, /rate limited/i);
+      assert.match(result.text, /15/);
+      assert.doesNotMatch(result.text, /Request failed with status code 429/i);
+    } finally {
+      delete require.cache[clientPath];
+      if (previousApiKey === undefined) {
+        delete process.env.GEMINI_API_KEY;
+      } else {
+        process.env.GEMINI_API_KEY = previousApiKey;
+      }
+    }
   });
 
   await run('update_task summarizes concrete changes', async () => {
@@ -257,6 +341,237 @@ function getChatHandler(router) {
     assert.equal(result.task.due_at, '2026-04-12T14:00:00.000Z');
     const freeSlotCall = calls.find(call => call.url.endsWith('/tasks/free-slots'));
     assert.equal(freeSlotCall.config.params.duration, 90);
+  });
+
+  await run('postpone_task allows moving a task to date-only today', async () => {
+    const axiosMock = {
+      get: async () => ({
+        data: [
+          {
+            _id: 'task-today',
+            title: 'Study AWS',
+            due_at: '2026-04-11T03:30:00.000Z',
+            has_time: false
+          }
+        ]
+      }),
+      patch: async (url, body) => ({
+        data: {
+          _id: 'task-today',
+          title: 'Study AWS',
+          due_at: body.new_date
+        }
+      })
+    };
+
+    const tool = loadWithMocks(path.resolve(__dirname, '../tools/postponeTask.tool.js'), {
+      axios: axiosMock,
+      './utils/fuzzyTaskSearch': {
+        resolveTaskId: async () => ({ resolved: true, task_id: 'task-today', title: 'Study AWS' })
+      }
+    });
+
+    const result = await tool.execute({
+      query: 'study asw',
+      new_date: 'today',
+      _meta: { localDate: '2026-04-18', localTimeString: '07:30:00 PM' }
+    }, 'token');
+
+    assert.equal(result.success, true);
+    assert.equal(result.task.due_at, '2026-04-18T00:00:00');
+  });
+
+  await run('get_tasks supports limited recent tasks', async () => {
+    const tool = loadWithMocks(path.resolve(__dirname, '../tools/getTodayTasks.tool.js'), {
+      axios: {
+        get: async () => ({
+          data: [
+            { _id: 'old', title: 'Old task', status: 'pending', created_at: '2026-04-01T10:00:00.000Z' },
+            { _id: 'done', title: 'Done task', status: 'completed', created_at: '2026-04-20T10:00:00.000Z' },
+            { _id: 'new', title: 'New task', status: 'pending', created_at: '2026-04-18T10:00:00.000Z' },
+            { _id: 'mid', title: 'Middle task', status: 'pending', created_at: '2026-04-12T10:00:00.000Z' }
+          ]
+        })
+      }
+    });
+
+    const result = await tool.execute({
+      filter: 'recent',
+      limit: 2,
+      _meta: { localDate: '2026-04-18', localTimeString: '07:30:00 PM' }
+    }, 'token');
+
+    assert.equal(result.success, true);
+    assert.equal(result.count, 2);
+    assert.deepEqual(result.tasks.map(task => task.task_id), ['new', 'mid']);
+  });
+
+  await run('update_multiple_tasks normalizes date-only today without treating it as past', async () => {
+    const calls = [];
+    const tool = loadWithMocks(path.resolve(__dirname, '../tools/updateMultipleTasks.tool.js'), {
+      axios: {
+        patch: async (url, body) => {
+          calls.push({ url, body });
+          return { data: { title: 'Study AWS' } };
+        }
+      },
+      './utils/fuzzyTaskSearch': {
+        resolveTaskId: async query => ({ resolved: true, task_id: `id-${query}`, title: query })
+      }
+    });
+
+    const result = await tool.execute({
+      queries: ['study asw'],
+      updates: { due_at: 'today' },
+      _meta: { localDate: '2026-04-18', localTimeString: '07:30:00 PM' }
+    }, 'token');
+
+    assert.equal(result.success, true);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].body.due_at, '2026-04-18T00:00:00');
+    assert.equal(calls[0].body.has_time, false);
+  });
+
+  await run('list_notifications filters unread team invites', async () => {
+    const tool = loadWithMocks(path.resolve(__dirname, '../tools/listNotifications.tool.js'), {
+      axios: {
+        get: async () => ({
+          data: [
+            {
+              _id: 'n1',
+              type: 'team_invite',
+              message: 'Join Design',
+              is_read: false,
+              team_id: { _id: 'team1', name: 'Design' }
+            },
+            {
+              _id: 'n2',
+              type: 'info',
+              message: 'Welcome',
+              is_read: false
+            }
+          ]
+        })
+      }
+    });
+
+    const result = await tool.execute({ filter: 'team_invites' }, 'token');
+    assert.equal(result.success, true);
+    assert.equal(result.count, 1);
+    assert.equal(result.notifications[0].team_name, 'Design');
+  });
+
+  await run('respond_team_invite resolves invite by team name and accepts it', async () => {
+    const calls = [];
+    const tool = loadWithMocks(path.resolve(__dirname, '../tools/respondTeamInvite.tool.js'), {
+      axios: {
+        get: async () => ({
+          data: [
+            {
+              _id: 'n1',
+              type: 'team_invite',
+              message: 'Join Design',
+              is_read: false,
+              team_id: { _id: 'team1', name: 'Design' }
+            }
+          ]
+        }),
+        post: async url => {
+          calls.push(url);
+          return { data: { message: 'Invite accepted' } };
+        }
+      }
+    });
+
+    const result = await tool.execute({ action: 'accept', team_name: 'design' }, 'token');
+    assert.equal(result.success, true);
+    assert.equal(result.team_id, 'team1');
+    assert.equal(calls[0].endsWith('/teams/team1/accept-invite'), true);
+  });
+
+  await run('copy_task copies a fuzzy matched task to a named team with resolved assignee', async () => {
+    const calls = [];
+    const tool = loadWithMocks(path.resolve(__dirname, '../tools/copyTask.tool.js'), {
+      axios: {
+        get: async url => {
+          if (url.endsWith('/teams')) {
+            return { data: [{ _id: 'team1', name: 'Design' }] };
+          }
+          if (url.endsWith('/teams/team1/members')) {
+            return { data: [{ user_id: 'user1', name: 'Asha', email: 'asha@example.com' }] };
+          }
+          throw new Error(`Unexpected GET ${url}`);
+        },
+        post: async (url, body) => {
+          calls.push({ url, body });
+          return { data: { _id: 'copy1', title: 'Prepare brief' } };
+        }
+      },
+      './utils/fuzzyTaskSearch': {
+        resolveTaskId: async () => ({ resolved: true, task_id: 'task1', title: 'Prepare brief' })
+      }
+    });
+
+    const result = await tool.execute({
+      query: 'brief',
+      direction: 'to_team',
+      team_name: 'Design',
+      assignee_queries: ['asha']
+    }, 'token');
+
+    assert.equal(result.success, true);
+    assert.equal(calls[0].url.endsWith('/tasks/task1/copy-team'), true);
+    assert.deepEqual(calls[0].body.assigned_to, ['user1']);
+  });
+
+  await run('create_plan moves today default time forward when it would be in the past', async () => {
+    const calls = [];
+    const tool = loadWithMocks(path.resolve(__dirname, '../tools/createPlan.tool.js'), {
+      axios: {
+        post: async (url, body) => {
+          calls.push({ url, body });
+          return {
+            data: {
+              tasks: body.tasks.map((task, index) => ({ ...task, _id: `task${index + 1}` }))
+            }
+          };
+        }
+      }
+    });
+
+    const result = await tool.execute({
+      goal: 'Exam preparation',
+      num_days: 2,
+      tasks: [{ title: 'Review concepts' }, { title: 'Solve papers' }],
+      _meta: { localDate: '2026-04-19', localTimeString: '06:30:00 PM' }
+    }, 'token');
+
+    assert.equal(result.success, true);
+    assert.equal(calls[0].body.tasks[0].due_at, '2026-04-19T19:30:00');
+    assert.equal(calls[0].body.tasks[1].due_at, '2026-04-20T09:00:00');
+  });
+
+  await run('create_plan fails when backend creates no tasks', async () => {
+    const tool = loadWithMocks(path.resolve(__dirname, '../tools/createPlan.tool.js'), {
+      axios: {
+        post: async () => ({
+          data: {
+            summary: { created: 0, failed: 1 },
+            tasks: [],
+            errors: [{ title: 'Review concepts', error: 'Tasks cannot be scheduled in the past' }]
+          }
+        })
+      }
+    });
+
+    const result = await tool.execute({
+      goal: 'Exam preparation',
+      tasks: [{ title: 'Review concepts' }],
+      _meta: { localDate: '2026-04-19', localTimeString: '06:30:00 PM' }
+    }, 'token');
+
+    assert.equal(result.success, false);
+    assert.match(result.error, /No plan tasks were created/i);
   });
 
   await run('chat route supports chained tool calls and injects execution metadata', async () => {

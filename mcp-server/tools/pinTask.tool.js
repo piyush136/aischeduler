@@ -1,7 +1,7 @@
 const axios = require('axios');
 const { resolveTaskId } = require('./utils/fuzzyTaskSearch');
 
-const API_URL = process.env.BACKEND_URL;
+const { BACKEND_API_URL: API_URL } = require('../config/api');
 
 const pinTask = {
   name: "pin_task",

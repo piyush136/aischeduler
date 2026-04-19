@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const API_URL = process.env.BACKEND_URL;
+const { BACKEND_API_URL: API_URL } = require('../config/api');
 
 const renameTeam = {
   name: "rename_team",

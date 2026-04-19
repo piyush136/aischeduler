@@ -9,7 +9,7 @@ const notificationSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['task_assigned', 'comment', 'mention', 'team_invite', 'info', 'reminder'],
+    enum: ['task_assigned', 'comment', 'mention', 'team_invite', 'team_message', 'info', 'reminder'],
     required: true
   },
   task_id: {
@@ -20,6 +20,17 @@ const notificationSchema = new mongoose.Schema({
   team_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Team',
+    default: null
+  },
+  actor_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null,
+    description: 'The user who triggered the notification'
+  },
+  conversation_type: {
+    type: String,
+    enum: ['direct', 'team', null],
     default: null
   },
   message: {

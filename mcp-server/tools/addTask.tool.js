@@ -7,7 +7,7 @@ const {
   getApiErrorMessage
 } = require('./utils/runtime');
 
-const API_URL = process.env.BACKEND_URL;
+const { BACKEND_API_URL: API_URL } = require('../config/api');
 
 const convertRecurrenceToRepeat = recurrence => {
   if (!recurrence || recurrence === 'NONE') return 'never';
@@ -291,7 +291,7 @@ const addTask = {
         task: response.data,
         message: dueAt
           ? `Task "${response.data.title}" created${hasTime ? ` for ${dueAt}` : ' without a fixed time'}.`
-          : `Task "${response.data.title}" created successfully.`,
+          : `Task "${response.data.title}" created without a due date, so it will not appear in today tasks until you schedule it.`,
         extracted: {
           title,
           priority,

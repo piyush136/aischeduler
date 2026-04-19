@@ -3,7 +3,7 @@ const { resolveTaskId } = require('./utils/fuzzyTaskSearch');
 const { normalizeDueAt, isPastDue } = require('./utils/dateTime');
 const { buildAuthHeaders, getApiErrorMessage } = require('./utils/runtime');
 
-const API_URL = process.env.BACKEND_URL;
+const { BACKEND_API_URL: API_URL } = require('../config/api');
 
 function isNextAvailableRequest(value = '') {
   const normalized = String(value).toLowerCase().trim();
@@ -99,7 +99,7 @@ const postponeTask = {
         if (!normalizedDate.dueAt) {
           return { success: false, error: normalizedDate.error || `Could not understand "${new_date}".` };
         }
-        if (isPastDue(normalizedDate.dueAt, _meta)) {
+        if (isPastDue(normalizedDate.dueAt, _meta, { hasTime: normalizedDate.hasTime })) {
           return { success: false, error: 'Cannot postpone a task into the past.' };
         }
         targetDueAt = normalizedDate.dueAt;

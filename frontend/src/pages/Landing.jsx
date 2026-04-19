@@ -29,24 +29,24 @@ export default function Landing({ token }) {
         <div className="absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-rosefire-300/35 blur-3xl animate-float" />
       </div>
 
-      <nav className="fixed inset-x-0 top-0 z-50">
-        <div className="mx-auto mt-4 flex max-w-7xl items-center justify-between rounded-[28px] border border-white/60 bg-white/62 px-6 py-4 shadow-[0_18px_60px_rgba(15,23,42,0.12)] backdrop-blur-2xl">
-          <div className="flex items-center gap-3">
+      <nav className="fixed inset-x-0 top-0 z-50 px-3 sm:px-4">
+        <div className="mx-auto mt-3 flex max-w-7xl items-center justify-between gap-3 rounded-[22px] border border-white/60 bg-white/62 px-3 py-3 shadow-[0_18px_60px_rgba(15,23,42,0.12)] backdrop-blur-2xl sm:mt-4 sm:rounded-[28px] sm:px-6 sm:py-4">
+          <div className="flex min-w-0 items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-aurora-gradient text-lg font-black text-white">A</div>
-            <div>
+            <div className="min-w-0">
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-400">Task Manager</p>
-              <p className="text-lg font-semibold text-slate-900">AI Personal Task Manager</p>
+              <p className="truncate text-base font-semibold text-slate-900 sm:text-lg">AI Personal Task Manager</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-shrink-0 items-center gap-2 sm:gap-3">
             <div className="hidden md:block">
               <InstallPWA />
             </div>
             {token ? (
               <Link
                 to="/dashboard"
-                className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-slate-800"
+                className="rounded-2xl bg-slate-950 px-3 py-2.5 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-slate-800 sm:px-5 sm:py-3"
               >
                 Go to Dashboard
               </Link>
@@ -57,7 +57,7 @@ export default function Landing({ token }) {
                 </Link>
                 <Link
                   to="/register"
-                  className="rounded-2xl bg-aurora-gradient px-5 py-3 text-sm font-semibold text-white transition hover-glow"
+                  className="rounded-2xl bg-aurora-gradient px-3 py-2.5 text-sm font-semibold text-white transition hover-glow sm:px-5 sm:py-3"
                 >
                   Get Started
                 </Link>
@@ -67,7 +67,7 @@ export default function Landing({ token }) {
         </div>
       </nav>
 
-      <main className="relative z-10 px-6 pb-20 pt-36">
+      <main className="relative z-10 px-3 pb-16 pt-32 sm:px-6 sm:pb-20 sm:pt-36">
         <section className="mx-auto grid max-w-7xl items-center gap-14 lg:grid-cols-[1.05fr_0.95fr]">
           <div className="animate-fade-in">
             <div className="premium-chip mb-6">
@@ -75,12 +75,12 @@ export default function Landing({ token }) {
               New: AI Task Scheduling
             </div>
 
-            <h1 className="max-w-3xl text-5xl font-semibold leading-[1.02] text-slate-950 md:text-7xl">
+            <h1 className="max-w-3xl text-4xl font-semibold leading-[1.05] text-slate-950 sm:text-5xl md:text-7xl">
               Organize your work
               <span className="text-gradient"> with Intelligence.</span>
             </h1>
 
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600 md:text-xl">
+            <p className="mt-6 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg sm:leading-8 md:text-xl">
               Stop drowning in tasks. AI Personal Task Manager uses AI to prioritize, schedule, and manage your workload so you can focus on what matters.
             </p>
 
@@ -114,14 +114,14 @@ export default function Landing({ token }) {
 
           <div className="relative animate-slide-up">
             <div className="absolute inset-6 rounded-[34px] bg-gradient-to-br from-aurora-300/40 via-primary-300/25 to-rosefire-300/35 blur-3xl" />
-            <div className="surface-card relative overflow-hidden p-5">
-              <div className="rounded-[26px] border border-white/70 bg-slate-950 px-5 py-4 text-white shadow-[0_30px_70px_rgba(3,7,18,0.4)]">
-                <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                  <div>
+            <div className="surface-card relative overflow-hidden p-3 sm:p-5">
+              <div className="rounded-[22px] border border-white/70 bg-slate-950 px-3 py-4 text-white shadow-[0_30px_70px_rgba(3,7,18,0.4)] sm:rounded-[26px] sm:px-5">
+                <div className="flex flex-col gap-3 border-b border-white/10 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
                     <p className="text-xs uppercase tracking-[0.28em] text-white/45">Command Center</p>
-                    <h2 className="mt-2 text-2xl font-semibold">Organize your work with Intelligence.</h2>
+                    <h2 className="mt-2 text-xl font-semibold sm:text-2xl">Organize your work with Intelligence.</h2>
                   </div>
-                  <div className="rounded-2xl bg-white/10 px-3 py-2 text-sm text-white/70">AI Task Scheduling</div>
+                  <div className="w-fit rounded-2xl bg-white/10 px-3 py-2 text-sm text-white/70">AI Task Scheduling</div>
                 </div>
 
                 <div className="mt-5 grid gap-4 md:grid-cols-[1fr_0.78fr]">
@@ -142,8 +142,8 @@ export default function Landing({ token }) {
                         ['Secure & Reliable', 'Enterprise-grade security with regular backups.', 'bg-aurora-400/15 text-aurora-100'],
                         ['Smart Scheduling', 'Auto-schedule tasks based on priority.', 'bg-primary-400/15 text-primary-100'],
                       ].map(([title, time, colors]) => (
-                        <div key={title} className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/6 px-4 py-3">
-                          <div>
+                        <div key={title} className="flex flex-col gap-3 rounded-2xl border border-white/8 bg-white/6 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="min-w-0">
                             <p className="font-medium text-white">{title}</p>
                             <p className="mt-1 text-xs text-white/45">{time}</p>
                           </div>

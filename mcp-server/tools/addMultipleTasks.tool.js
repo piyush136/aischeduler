@@ -2,7 +2,7 @@ const axios = require('axios');
 const { normalizeDueAt, isPastDue } = require('./utils/dateTime');
 const { buildAuthHeaders, getApiErrorMessage } = require('./utils/runtime');
 
-const API_URL = process.env.BACKEND_URL;
+const { BACKEND_API_URL: API_URL } = require('../config/api');
 
 const addMultipleTasks = {
   name: 'add_multiple_tasks',
@@ -49,7 +49,7 @@ const addMultipleTasks = {
           continue;
         }
 
-        if (normalizedDate.dueAt && isPastDue(normalizedDate.dueAt, _meta)) {
+        if (normalizedDate.dueAt && isPastDue(normalizedDate.dueAt, _meta, { hasTime: normalizedDate.hasTime })) {
           validationErrors.push({ index, title: task.title, error: 'Cannot create a task in the past' });
           continue;
         }

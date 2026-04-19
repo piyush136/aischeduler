@@ -1,5 +1,8 @@
 const axios = require('axios');
 const { resolveTaskId } = require('./utils/fuzzyTaskSearch');
+const { normalizeDueAt, isPastDue } = require('./utils/dateTime');
+const { buildAuthHeaders, getApiErrorMessage } = require('./utils/runtime');
+const { BACKEND_API_URL } = require('../config/api');
 
 module.exports = {
   name: 'update_multiple_tasks',
@@ -21,11 +24,33 @@ module.exports = {
   },
   execute: async (args, token) => {
     try {
-      const { queries, updates } = args;
-      const API_URL = process.env.BACKEND_URL || 'http://localhost:5000';
+      const { queries, updates, _meta = {} } = args;
+      const API_URL = BACKEND_API_URL;
 
       if (!Array.isArray(queries) || queries.length === 0) {
         return { success: false, error: 'queries array is required and must not be empty.' };
+      }
+
+      if (!updates || typeof updates !== 'object' || Array.isArray(updates)) {
+        return { success: false, error: 'updates object is required.' };
+      }
+
+      const normalizedUpdates = { ...updates };
+      if (normalizedUpdates.due_at !== undefined) {
+        const normalizedDate = normalizeDueAt(normalizedUpdates.due_at, _meta);
+        if (!normalizedDate.dueAt) {
+          return { success: false, error: normalizedDate.error || `Could not understand "${normalizedUpdates.due_at}".` };
+        }
+
+        const nextHasTime = normalizedUpdates.has_time === undefined ? normalizedDate.hasTime : normalizedUpdates.has_time;
+        if (isPastDue(normalizedDate.dueAt, _meta, { hasTime: nextHasTime })) {
+          return { success: false, error: 'Updated due time cannot be in the past.' };
+        }
+
+        normalizedUpdates.due_at = normalizedDate.dueAt;
+        if (normalizedUpdates.has_time === undefined) {
+          normalizedUpdates.has_time = normalizedDate.hasTime;
+        }
       }
 
       const results = { updated: [], failed: [] };
@@ -42,12 +67,12 @@ module.exports = {
         const task_id = resolved.task_id;
         
         try {
-          const response = await axios.patch(`${API_URL}/tasks/${task_id}`, updates, {
-             headers: { Authorization: `Bearer ${token}` }
+          const response = await axios.patch(`${API_URL}/tasks/${task_id}`, normalizedUpdates, {
+            headers: buildAuthHeaders(token)
           });
-          results.updated.push({ query, title: resolved.title, task_id });
+          results.updated.push({ query, title: response.data?.title || resolved.title, task_id, updates: normalizedUpdates });
         } catch (updateErr) {
-          results.failed.push({ query, error: updateErr.message });
+          results.failed.push({ query, error: getApiErrorMessage(updateErr, 'Failed to update task.') });
         }
       }
 

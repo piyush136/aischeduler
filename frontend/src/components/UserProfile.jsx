@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { User, Mail, Phone, Calendar, SwitchCamera, Save, X, Lock, Shield, Image as ImageIcon } from 'lucide-react';
+import { apiUrl } from '../config/api';
 
 export default function UserProfile({ token, onProfileUpdate }) {
     const [activeTab, setActiveTab] = useState('view'); // 'view', 'edit', 'password'
@@ -18,7 +19,7 @@ export default function UserProfile({ token, onProfileUpdate }) {
     const fetchProfile = async () => {
         try {
             setLoading(true);
-            const res = await axios.get('/api/user/profile', { headers: { Authorization: `Bearer ${token}` } });
+            const res = await axios.get(apiUrl('/user/profile'), { headers: { Authorization: `Bearer ${token}` } });
             setProfileData(res.data);
             if (onProfileUpdate) onProfileUpdate(res.data);
             setFormData({
@@ -39,7 +40,7 @@ export default function UserProfile({ token, onProfileUpdate }) {
         setMessage('');
         setError('');
         try {
-            const res = await axios.put('/api/user/profile', formData, { headers: { Authorization: `Bearer ${token}` } });
+            const res = await axios.put(apiUrl('/user/profile'), formData, { headers: { Authorization: `Bearer ${token}` } });
             setProfileData(res.data);
             setMessage('Profile updated successfully');
             if (onProfileUpdate) onProfileUpdate(res.data);
@@ -58,7 +59,7 @@ export default function UserProfile({ token, onProfileUpdate }) {
             return;
         }
         try {
-            await axios.put('/api/user/change-password', {
+            await axios.put(apiUrl('/user/change-password'), {
                 currentPassword: passwordData.currentPassword,
                 newPassword: passwordData.newPassword
             }, { headers: { Authorization: `Bearer ${token}` } });
@@ -104,43 +105,43 @@ export default function UserProfile({ token, onProfileUpdate }) {
     );
 
     return (
-        <div className="max-w-3xl mx-auto bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
+        <div className="mx-auto max-w-3xl overflow-hidden rounded-[22px] border border-slate-100 bg-white shadow-xl shadow-slate-200/50 sm:rounded-3xl">
             {/* Header Area */}
-            <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-6 md:p-8 border-b border-indigo-100 flex flex-col md:flex-row items-center gap-6">
-                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-3xl font-bold shadow-lg shadow-indigo-200/50 overflow-hidden">
+            <div className="flex flex-col items-center gap-5 border-b border-indigo-100 bg-gradient-to-r from-indigo-50 to-blue-50 p-5 sm:gap-6 sm:p-6 md:flex-row md:p-8">
+                <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-2xl font-bold text-white shadow-lg shadow-indigo-200/50 sm:h-24 sm:w-24 sm:text-3xl">
                     {profileData.profile_picture ? (
                         <img src={profileData.profile_picture} alt="Profile" className="w-full h-full object-cover" />
                     ) : (
                         profileData.name ? profileData.name.charAt(0).toUpperCase() : 'U'
                     )}
                 </div>
-                <div className="text-center md:text-left">
-                    <h2 className="text-2xl font-bold text-slate-800 mb-1">{profileData.name || 'User'}</h2>
-                    <p className="text-slate-500 flex items-center justify-center md:justify-start gap-2">
+                <div className="min-w-0 text-center md:text-left">
+                    <h2 className="mb-1 break-words text-2xl font-bold text-slate-800">{profileData.name || 'User'}</h2>
+                    <p className="flex min-w-0 items-center justify-center gap-2 break-all text-slate-500 md:justify-start">
                         <Mail size={14} />
                         {profileData.email}
                     </p>
                 </div>
-                <div className="md:ml-auto flex flex-col gap-2 self-stretch justify-center">
+                <div className="flex flex-col justify-center gap-2 self-stretch md:ml-auto">
                      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-semibold">
                          <Shield size={12} />
                          Pro Plan
                      </span>
-                     <span className="text-xs text-slate-400 text-right">
+                     <span className="text-center text-xs text-slate-400 md:text-right">
                          Member since {new Date(profileData.created_at).toLocaleDateString()}
                      </span>
                 </div>
             </div>
 
             {/* Navigation */}
-            <div className="p-4 border-b border-slate-100 flex gap-2 overflow-x-auto">
+            <div className="flex gap-2 overflow-x-auto border-b border-slate-100 p-3 sm:p-4">
                 <TabButton id="view" label="Profile" icon={User} />
                 <TabButton id="edit" label="Edit Profile" icon={Save} />
                 {!profileData.google_tokens && <TabButton id="password" label="Security" icon={Lock} />}
             </div>
 
             {/* Content Area */}
-            <div className="p-6 md:p-8">
+            <div className="p-4 sm:p-6 md:p-8">
                 {message && (
                     <div className="mb-6 p-4 bg-emerald-50 border border-emerald-100 text-emerald-700 rounded-xl flex items-center gap-2">
                         <Shield size={18} /> {message}
@@ -191,9 +192,9 @@ export default function UserProfile({ token, onProfileUpdate }) {
                            <label className="block text-sm font-medium text-slate-700 mb-1.5 flex items-center gap-2"><ImageIcon size={16} className="text-slate-400" /> Profile Image URL</label>
                            <input type="url" value={formData.profile_picture} onChange={e => setFormData({...formData, profile_picture: e.target.value})} placeholder="https://example.com/avatar.jpg" className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all" />
                        </div>
-                       <div className="pt-2 flex items-center gap-3">
-                           <button type="submit" className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors shadow-lg shadow-indigo-200">Save Changes</button>
-                           <button type="button" onClick={() => setActiveTab('view')} className="px-6 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-colors">Cancel</button>
+                       <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:items-center sm:gap-3">
+                           <button type="submit" className="rounded-xl bg-indigo-600 px-6 py-2 font-semibold text-white shadow-lg shadow-indigo-200 transition-colors hover:bg-indigo-700">Save Changes</button>
+                           <button type="button" onClick={() => setActiveTab('view')} className="rounded-xl bg-slate-100 px-6 py-2 font-semibold text-slate-700 transition-colors hover:bg-slate-200">Cancel</button>
                        </div>
                     </form>
                 )}
@@ -212,9 +213,9 @@ export default function UserProfile({ token, onProfileUpdate }) {
                            <label className="block text-sm font-medium text-slate-700 mb-1.5">Confirm New Password</label>
                            <input type="password" minLength="6" value={passwordData.confirmPassword} onChange={e => setPasswordData({...passwordData, confirmPassword: e.target.value})} required className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all" />
                        </div>
-                       <div className="pt-2 flex items-center gap-3">
-                           <button type="submit" className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors shadow-lg shadow-indigo-200">Update Password</button>
-                           <button type="button" onClick={() => setActiveTab('view')} className="px-6 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-colors">Cancel</button>
+                       <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:items-center sm:gap-3">
+                           <button type="submit" className="rounded-xl bg-indigo-600 px-6 py-2 font-semibold text-white shadow-lg shadow-indigo-200 transition-colors hover:bg-indigo-700">Update Password</button>
+                           <button type="button" onClick={() => setActiveTab('view')} className="rounded-xl bg-slate-100 px-6 py-2 font-semibold text-slate-700 transition-colors hover:bg-slate-200">Cancel</button>
                        </div>
                     </form>
                 )}

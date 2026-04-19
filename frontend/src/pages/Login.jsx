@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Lock, Mail, Sparkles } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
+import { apiUrl } from '../config/api';
 
 export default function Login({ setAuth }) {
   const [email, setEmail] = useState('');
@@ -15,7 +16,7 @@ export default function Login({ setAuth }) {
     setLoading(true);
     setError('');
     try {
-      const res = await axios.post('/api/auth/login', { email, password });
+      const res = await axios.post(apiUrl('/auth/login'), { email, password });
       setAuth(res.data.token, res.data.user);
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed');
@@ -27,7 +28,7 @@ export default function Login({ setAuth }) {
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
       setLoading(true);
-      const res = await axios.post('/api/auth/google-login', {
+      const res = await axios.post(apiUrl('/auth/google-login'), {
         token: credentialResponse.credential
       });
       setAuth(res.data.token, res.data.user);
@@ -43,7 +44,7 @@ export default function Login({ setAuth }) {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-4">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-3 py-4 sm:px-4">
       <div className="absolute left-[-8rem] top-6 h-72 w-72 rounded-full bg-aurora-300/35 blur-3xl" />
       <div className="absolute bottom-0 right-[-5rem] h-80 w-80 rounded-full bg-primary-300/25 blur-3xl" />
 
@@ -75,7 +76,7 @@ export default function Login({ setAuth }) {
           </div>
         </div>
 
-        <div className="surface-card relative overflow-hidden p-7 md:p-8">
+        <div className="surface-card relative overflow-hidden p-5 sm:p-7 md:p-8">
           <div className="absolute right-6 top-6 hidden rounded-full border border-aurora-100 bg-white/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-slate-400 md:block">
             Secure Access
           </div>
@@ -85,7 +86,7 @@ export default function Login({ setAuth }) {
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-aurora-gradient text-xl font-black text-white shadow-[0_20px_45px_rgba(146,87,255,0.28)] lg:mx-0">
                 A
               </div>
-              <h2 className="mt-4 text-3xl font-semibold text-slate-950">Sign in</h2>
+              <h2 className="mt-4 text-2xl font-semibold text-slate-950 sm:text-3xl">Sign in</h2>
               <p className="mt-2 text-sm text-slate-500 md:text-base">Access your premium AI workflow workspace.</p>
             </div>
 
@@ -109,8 +110,8 @@ export default function Login({ setAuth }) {
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-slate-200/80" />
               </div>
-              <div className="relative flex justify-center text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-                <span className="bg-white/70 px-4 backdrop-blur-xl">Or continue with email</span>
+              <div className="relative flex justify-center text-center text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 sm:text-xs sm:tracking-[0.24em]">
+                <span className="bg-white/70 px-3 backdrop-blur-xl sm:px-4">Or continue with email</span>
               </div>
             </div>
 
@@ -132,7 +133,7 @@ export default function Login({ setAuth }) {
               </div>
 
               <div>
-                <div className="mb-1.5 flex items-center justify-between">
+                <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
                   <label className="text-sm font-medium text-slate-700">Password</label>
                   <a href="#" className="text-sm font-medium text-aurora-600 transition hover:text-primary-600">
                     Forgot password?

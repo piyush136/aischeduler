@@ -2,7 +2,7 @@ const axios = require('axios');
 const { getReferenceDate } = require('./utils/dateTime');
 const { buildAuthHeaders, getApiErrorMessage } = require('./utils/runtime');
 
-const API_URL = process.env.BACKEND_URL;
+const { BACKEND_API_URL: API_URL } = require('../config/api');
 
 function dayRangeFromReference(referenceDate, offsetDays = 0) {
   const start = new Date(referenceDate);
@@ -22,7 +22,11 @@ const getTasks = {
     properties: {
       filter: {
         type: 'string',
-        enum: ['today', 'tomorrow', 'overdue', 'pending', 'completed', 'week', 'all']
+        enum: ['today', 'tomorrow', 'overdue', 'pending', 'completed', 'week', 'recent', 'all']
+      },
+      limit: {
+        type: 'number',
+        description: 'Optional maximum number of tasks to return, useful for requests like "5 recent tasks".'
       }
     }
   },
@@ -30,6 +34,10 @@ const getTasks = {
     try {
       const { _meta = {} } = args;
       const filter = String(args.filter || 'today').toLowerCase();
+      const requestedLimit = Number(args.limit);
+      const limit = Number.isFinite(requestedLimit) && requestedLimit > 0
+        ? Math.min(Math.floor(requestedLimit), 50)
+        : null;
       const response = await axios.get(`${API_URL}/tasks`, {
         headers: buildAuthHeaders(token)
       });
@@ -44,6 +52,7 @@ const getTasks = {
 
       let filtered = [];
       let label = filter;
+      let preserveOrder = false;
 
       switch (filter) {
         case 'today':
@@ -70,6 +79,13 @@ const getTasks = {
           filtered = allTasks.filter(task => task.due_at && new Date(task.due_at) >= today.start && new Date(task.due_at) <= weekEnd);
           label = 'this week';
           break;
+        case 'recent':
+          filtered = allTasks
+            .filter(task => task.status !== 'completed')
+            .sort((a, b) => new Date(b.created_at || b.updated_at || 0) - new Date(a.created_at || a.updated_at || 0));
+          label = 'recent';
+          preserveOrder = true;
+          break;
         case 'all':
         default:
           filtered = allTasks;
@@ -77,15 +93,21 @@ const getTasks = {
           break;
       }
 
-      filtered.sort((a, b) => {
-        if (a.isPinned && !b.isPinned) return -1;
-        if (!a.isPinned && b.isPinned) return 1;
-        if ((a.priority || 3) !== (b.priority || 3)) return (a.priority || 3) - (b.priority || 3);
-        if (a.due_at && b.due_at) return new Date(a.due_at) - new Date(b.due_at);
-        if (a.due_at) return -1;
-        if (b.due_at) return 1;
-        return a.title.localeCompare(b.title);
-      });
+      if (!preserveOrder) {
+        filtered.sort((a, b) => {
+          if (a.isPinned && !b.isPinned) return -1;
+          if (!a.isPinned && b.isPinned) return 1;
+          if ((a.priority || 3) !== (b.priority || 3)) return (a.priority || 3) - (b.priority || 3);
+          if (a.due_at && b.due_at) return new Date(a.due_at) - new Date(b.due_at);
+          if (a.due_at) return -1;
+          if (b.due_at) return 1;
+          return a.title.localeCompare(b.title);
+        });
+      }
+
+      if (limit) {
+        filtered = filtered.slice(0, limit);
+      }
 
       const tasks = filtered.map((task, index) => ({
         index: index + 1,
@@ -97,7 +119,9 @@ const getTasks = {
         has_time: task.has_time,
         isPinned: Boolean(task.isPinned),
         postponed_count: task.postponed_count || 0,
-        subtask_count: task.subtasks?.length || 0
+        subtask_count: task.subtasks?.length || 0,
+        created_at: task.created_at,
+        updated_at: task.updated_at
       }));
 
       const overdueCount = allTasks.filter(task => task.status !== 'completed' && task.due_at && new Date(task.due_at) < today.start).length;

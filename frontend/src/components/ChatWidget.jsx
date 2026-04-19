@@ -2,6 +2,19 @@ import { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { MessageSquare, Mic, MicOff, Send, Sparkles, X } from 'lucide-react';
 import ActionDialog from './ActionDialog';
+import { mcpUrl } from '../config/api';
+
+const DEFAULT_POSITION = { x: 24, y: 24 };
+const WIDGET_WIDTH = 384;
+const WIDGET_HEIGHT = 544;
+const BUTTON_WIDTH = 132;
+const BUTTON_HEIGHT = 56;
+const EDGE_PADDING = 12;
+
+function clamp(value, min, max) {
+  if (max < min) return min;
+  return Math.min(Math.max(value, min), max);
+}
 
 export default function ChatWidget({ token, onTaskUpdate }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -14,10 +27,14 @@ export default function ChatWidget({ token, onTaskUpdate }) {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [dialogState, setDialogState] = useState(null);
+  const [position, setPosition] = useState(DEFAULT_POSITION);
+  const [dragging, setDragging] = useState(false);
   const scrollRef = useRef(null);
   const recognitionRef = useRef(null);
   const textareaRef = useRef(null);
   const widgetRef = useRef(null);
+  const dragRef = useRef(null);
+  const suppressLauncherClickRef = useRef(false);
 
   const showNotice = (variant, title, message, options = {}) => {
     setDialogState({
@@ -102,6 +119,21 @@ export default function ChatWidget({ token, onTaskUpdate }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
 
+  useEffect(() => {
+    const handleResize = () => {
+      const width = isOpen ? WIDGET_WIDTH : BUTTON_WIDTH;
+      const height = isOpen ? WIDGET_HEIGHT : BUTTON_HEIGHT;
+      setPosition((current) => ({
+        x: clamp(current.x, EDGE_PADDING, window.innerWidth - width - EDGE_PADDING),
+        y: clamp(current.y, EDGE_PADDING, window.innerHeight - height - EDGE_PADDING)
+      }));
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isOpen]);
+
   const startListening = () => {
     if (recognitionRef.current && !isListening) recognitionRef.current.start();
   };
@@ -122,7 +154,7 @@ export default function ChatWidget({ token, onTaskUpdate }) {
     setLoading(true);
 
     try {
-      const res = await axios.post('http://localhost:4000/mcp/chat', {
+      const res = await axios.post(mcpUrl('/chat'), {
         message: userMsg.text,
         history: serverHistory,
         localDate: new Date().toLocaleDateString('en-CA'),
@@ -144,12 +176,80 @@ export default function ChatWidget({ token, onTaskUpdate }) {
     }
   };
 
+  const startDrag = (e) => {
+    if (e.button !== undefined && e.button !== 0) return;
+
+    const target = e.target;
+    if (isOpen && target.closest('button, textarea, input, a')) return;
+
+    const width = isOpen ? WIDGET_WIDTH : BUTTON_WIDTH;
+    const height = isOpen ? WIDGET_HEIGHT : BUTTON_HEIGHT;
+    dragRef.current = {
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      initialX: position.x,
+      initialY: position.y,
+      width,
+      height,
+      moved: false
+    };
+
+    setDragging(true);
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+  };
+
+  const moveDrag = (e) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+
+    const nextX = drag.initialX - (e.clientX - drag.startX);
+    const nextY = drag.initialY - (e.clientY - drag.startY);
+    const clampedX = clamp(nextX, EDGE_PADDING, window.innerWidth - drag.width - EDGE_PADDING);
+    const clampedY = clamp(nextY, EDGE_PADDING, window.innerHeight - drag.height - EDGE_PADDING);
+
+    if (Math.abs(e.clientX - drag.startX) > 4 || Math.abs(e.clientY - drag.startY) > 4) {
+      drag.moved = true;
+    }
+
+    setPosition({ x: clampedX, y: clampedY });
+  };
+
+  const endDrag = (e) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+
+    e.currentTarget.releasePointerCapture?.(e.pointerId);
+    suppressLauncherClickRef.current = !isOpen && drag.moved;
+    dragRef.current = null;
+    setDragging(false);
+  };
+
+  const handleLauncherClick = () => {
+    if (suppressLauncherClickRef.current) {
+      suppressLauncherClickRef.current = false;
+      return;
+    }
+    setIsOpen(true);
+  };
+
   return (
-    <div className="fixed bottom-6 right-6 z-[2000]" ref={widgetRef}>
+    <div
+      className="fixed z-[3500]"
+      ref={widgetRef}
+      style={{ right: `${position.x}px`, bottom: `${position.y}px` }}
+    >
       {!isOpen && (
         <button
-          onClick={() => setIsOpen(true)}
-          className="group relative overflow-hidden rounded-[24px] bg-slate-950 p-4 text-white shadow-[0_24px_60px_rgba(15,23,42,0.32)] transition hover:-translate-y-1"
+          onClick={handleLauncherClick}
+          onPointerDown={startDrag}
+          onPointerMove={moveDrag}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
+          className={`group relative touch-none overflow-hidden rounded-[24px] bg-slate-950 p-4 text-white shadow-[0_24px_60px_rgba(15,23,42,0.32)] transition ${
+            dragging ? 'cursor-grabbing' : 'cursor-grab hover:-translate-y-1'
+          }`}
+          title="Drag to move"
         >
           <div className="absolute inset-0 bg-gradient-to-br from-aurora-500 via-primary-500 to-rosefire-500 opacity-90 transition group-hover:scale-110" />
           <div className="relative flex items-center gap-3">
@@ -160,17 +260,26 @@ export default function ChatWidget({ token, onTaskUpdate }) {
       )}
 
       {isOpen && (
-        <div className="h-[34rem] w-[24rem] overflow-hidden rounded-[30px] border border-white/60 bg-white/78 shadow-[0_35px_100px_rgba(15,23,42,0.28)] backdrop-blur-2xl">
-          <div className="relative overflow-hidden border-b border-white/60 bg-slate-950 px-4 py-3.5 text-white">
+        <div className="flex h-[min(34rem,calc(100dvh-1rem))] w-[calc(100vw-1rem)] flex-col overflow-hidden rounded-[24px] border border-white/60 bg-white/78 shadow-[0_35px_100px_rgba(15,23,42,0.28)] backdrop-blur-2xl sm:h-[34rem] sm:w-[24rem] sm:rounded-[30px]">
+          <div
+            className={`relative touch-none overflow-hidden border-b border-white/60 bg-slate-950 px-4 py-3.5 text-white ${
+              dragging ? 'cursor-grabbing' : 'cursor-grab'
+            }`}
+            onPointerDown={startDrag}
+            onPointerMove={moveDrag}
+            onPointerUp={endDrag}
+            onPointerCancel={endDrag}
+            title="Drag to move"
+          >
             <div className="absolute inset-0 bg-gradient-to-r from-aurora-600 via-primary-500 to-rosefire-500 opacity-80" />
             <div className="relative flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
+              <div className="min-w-0 flex items-center gap-2.5">
                 <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/12">
                   <Sparkles size={17} />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <h3 className="text-sm font-semibold">AI Assistant</h3>
-                  <p className="text-[11px] text-white/65">Tasks, reminders, scheduling</p>
+                  <p className="truncate text-[11px] text-white/65">Tasks, reminders, scheduling</p>
                 </div>
               </div>
               <button onClick={() => setIsOpen(false)} className="rounded-2xl bg-white/10 p-2 transition hover:bg-white/15">
@@ -179,7 +288,7 @@ export default function ChatWidget({ token, onTaskUpdate }) {
             </div>
           </div>
 
-          <div className="flex h-[calc(100%-154px)] flex-col">
+          <div className="flex min-h-0 flex-1 flex-col">
             <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto bg-slate-50/40 px-3 py-3.5">
               {messages.map((msg, idx) => (
                 <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -209,7 +318,7 @@ export default function ChatWidget({ token, onTaskUpdate }) {
               </div>
             )}
 
-            <form onSubmit={sendMessage} className="border-t border-white/60 bg-white/72 px-3 py-3">
+            <form onSubmit={sendMessage} className="shrink-0 border-t border-white/60 bg-white/72 px-3 py-3">
               <div className="rounded-[24px] border border-white/70 bg-white/85 p-2 shadow-sm">
                 <div className="flex items-end gap-1.5">
                   <textarea

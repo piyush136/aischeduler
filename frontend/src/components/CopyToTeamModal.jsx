@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { X, Check } from 'lucide-react';
+import { apiUrl } from '../config/api';
 
 export default function CopyToTeamModal({ isOpen, onClose, task, token, onCopied, onError }) {
   const [teams, setTeams] = useState([]);
@@ -26,7 +27,7 @@ export default function CopyToTeamModal({ isOpen, onClose, task, token, onCopied
 
   const fetchTeams = async () => {
     try {
-      const res = await axios.get('/api/teams', {
+      const res = await axios.get(apiUrl('/teams'), {
         headers: { Authorization: `Bearer ${token}` }
       });
       setTeams(res.data);
@@ -37,7 +38,7 @@ export default function CopyToTeamModal({ isOpen, onClose, task, token, onCopied
 
   const fetchMembers = async (teamId) => {
     try {
-      const res = await axios.get(`/api/teams/${teamId}/members`, {
+      const res = await axios.get(apiUrl(`/teams/${teamId}/members`), {
         headers: { Authorization: `Bearer ${token}` }
       });
       setTeamMembers(res.data);
@@ -56,7 +57,7 @@ export default function CopyToTeamModal({ isOpen, onClose, task, token, onCopied
     setLoading(true);
     try {
       await axios.post(
-        `/api/tasks/${task._id}/copy-team`,
+        apiUrl(`/tasks/${task._id}/copy-team`),
         {
           team_id: selectedTeam,
           assigned_to: assignedTo
@@ -78,14 +79,14 @@ export default function CopyToTeamModal({ isOpen, onClose, task, token, onCopied
   if (!isOpen || !task) return null;
 
   return (
-    <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden p-6 relative">
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50 p-3 backdrop-blur-sm">
+      <div className="relative max-h-[calc(100dvh-1.5rem)] w-full max-w-sm overflow-y-auto rounded-xl bg-white p-4 shadow-2xl sm:p-6">
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
           <X size={20} />
         </button>
         
         <h2 className="text-xl font-bold text-gray-800 mb-4">Copy to Team</h2>
-        <p className="text-sm border-l-4 border-indigo-500 pl-3 py-1 mb-6 text-slate-600 italic bg-slate-50">
+        <p className="mb-6 break-words border-l-4 border-indigo-500 bg-slate-50 py-1 pl-3 pr-2 text-sm italic text-slate-600">
           "{task.title}"
         </p>
 
