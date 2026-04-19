@@ -2,7 +2,6 @@ const userService = require('../services/user.service');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { OAuth2Client } = require('google-auth-library');
-const { frontendUrl } = require('../config/api');
 
 exports.register = async (req, res) => {
   try {
@@ -67,7 +66,6 @@ exports.googleLogin = async (req, res) => {
     if (!token) {
       return res.status(400).json({ error: 'No token provided' });
     }
-
     // Verify the token with Google
     // Verify the token with Google
     const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -132,16 +130,11 @@ exports.googleCallback = async (req, res) => {
         // The Redirect URI is what Google sends the code TO.
         // If Google sends code to Backend (5000), Backend can redirect current user to Frontend (5173).
         
-        res.redirect(frontendUrl(`calendar/callback?code=${encodeURIComponent(code)}`));
+        const frontendUrl = `http://localhost:5173/calendar/callback?code=${code}`;
+        res.redirect(frontendUrl);
         
     } catch (err) {
         console.error('Google Callback Error:', err);
         res.status(500).send('Authentication Failed');
     }
-};
-
-exports.logout = (req, res) => {
-    // In a stateless JWT setup, logout is mainly handled by the client clearing the token.
-    // We provide this endpoint to fulfill the API requirement and for future extensibility (e.g., token blocklisting).
-    res.json({ message: 'Logged out successfully' });
 };
