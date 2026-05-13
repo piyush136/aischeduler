@@ -104,6 +104,10 @@ exports.googleLogin = async (req, res) => {
 const calendarService = require('../services/calendar.service');
 const User = require('../models/user.model');
 
+exports.logout = async (req, res) => {
+  res.json({ message: 'Logged out successfully' });
+};
+
 exports.googleCallback = async (req, res) => {
     try {
         const { code } = req.query;
