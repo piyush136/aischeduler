@@ -11,6 +11,16 @@ const {
 
 const MAX_TOOL_CHAIN = 10;
 
+router.get('/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    service: 'mcp-server',
+    model: process.env.GEMINI_MODEL || 'gemini-2.0-flash',
+    backendUrl: process.env.BACKEND_URL || null,
+    timestamp: new Date().toISOString()
+  });
+});
+
 router.post('/chat', async (req, res) => {
   try {
     const { message, history, localDate, localTimeString, userTimezone } = req.body;
