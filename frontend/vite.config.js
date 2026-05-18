@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 const BACKEND_PROXY_TARGET = process.env.VITE_BACKEND_PROXY_TARGET || 'http://127.0.0.1:5000'
+const MCP_PROXY_TARGET = process.env.VITE_MCP_PROXY_TARGET || 'http://127.0.0.1:5001'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -46,6 +47,10 @@ export default defineConfig({
         target: BACKEND_PROXY_TARGET,
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
+      },
+      '/mcp': {
+        target: MCP_PROXY_TARGET,
+        changeOrigin: true
       }
     }
   }
