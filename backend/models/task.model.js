@@ -118,7 +118,7 @@ const taskSchema = new mongoose.Schema({
   // Google Calendar sync id for the event (if synced)
   googleEventId: {
     type: String,
-    default: null,
+    default: undefined,
     description: 'Google Calendar Event ID for synced tasks'
   },
   // Recurrence settings
@@ -171,8 +171,12 @@ const taskSchema = new mongoose.Schema({
 
 // Index for getting tasks by user and date
 taskSchema.index({ user_id: 1, due_at: 1 });
-// Ensure a user cannot have duplicate tasks pointing to the same Google event
-taskSchema.index({ user_id: 1, googleEventId: 1 }, { unique: true, sparse: true });
+// Ensure a user cannot have duplicate tasks pointing to the same Google event.
+// Only real string event IDs are indexed; unsynced tasks omit googleEventId.
+taskSchema.index(
+  { user_id: 1, googleEventId: 1 },
+  { unique: true, partialFilterExpression: { googleEventId: { $type: 'string' } } }
+);
 // Index for team tasks
 taskSchema.index({ team_id: 1, assigned_to: 1 });
 taskSchema.index({ user_id: 1, status: 1, due_at: 1 });
