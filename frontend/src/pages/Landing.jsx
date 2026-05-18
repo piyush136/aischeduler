@@ -40,9 +40,7 @@ export default function Landing({ token }) {
           </div>
 
           <div className="flex flex-shrink-0 items-center gap-2 sm:gap-3">
-            <div className="hidden md:block">
-              <InstallPWA />
-            </div>
+            <InstallPWA className="hidden md:inline-flex" />
             {token ? (
               <Link
                 to="/dashboard"
@@ -98,6 +96,7 @@ export default function Landing({ token }) {
               >
                 View Demo
               </Link>
+              <InstallPWA className="px-7 py-4 text-base sm:hidden" />
             </div>
 
             <div className="mt-10 flex flex-wrap items-center gap-3 text-sm text-slate-500">

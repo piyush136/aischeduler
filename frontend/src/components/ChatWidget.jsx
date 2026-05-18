@@ -16,6 +16,37 @@ function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
+function normalizeSpeechText(text) {
+  return String(text || '').replace(/\s+/g, ' ').trim();
+}
+
+function mergeSpeechText(previous, next) {
+  const prev = normalizeSpeechText(previous);
+  const incoming = normalizeSpeechText(next);
+
+  if (!incoming) return prev;
+  if (!prev) return incoming;
+  if (prev === incoming || prev.endsWith(incoming)) return prev;
+  if (incoming.startsWith(prev)) return incoming;
+
+  const maxOverlap = Math.min(prev.length, incoming.length);
+  for (let length = maxOverlap; length > 0; length -= 1) {
+    if (prev.slice(-length).toLowerCase() === incoming.slice(0, length).toLowerCase()) {
+      return `${prev}${incoming.slice(length)}`.trim();
+    }
+  }
+
+  return `${prev} ${incoming}`.trim();
+}
+
+function appendSpeechToBase(base, speech) {
+  const cleanBase = String(base || '').replace(/\s+$/g, '');
+  const cleanSpeech = normalizeSpeechText(speech);
+
+  if (!cleanSpeech) return cleanBase;
+  return cleanBase ? `${cleanBase} ${cleanSpeech}` : cleanSpeech;
+}
+
 export default function ChatWidget({ token, onTaskUpdate }) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
@@ -35,6 +66,9 @@ export default function ChatWidget({ token, onTaskUpdate }) {
   const widgetRef = useRef(null);
   const dragRef = useRef(null);
   const suppressLauncherClickRef = useRef(false);
+  const inputAtSpeechStartRef = useRef('');
+  const committedSpeechRef = useRef('');
+  const processedFinalResultsRef = useRef(new Set());
 
   const showNotice = (variant, title, message, options = {}) => {
     setDialogState({
@@ -59,24 +93,28 @@ export default function ChatWidget({ token, onTaskUpdate }) {
     recognition.onstart = () => {
       setIsListening(true);
       setTranscript('');
+      committedSpeechRef.current = '';
+      processedFinalResultsRef.current = new Set();
     };
 
     recognition.onresult = (event) => {
       let interimTranscript = '';
-      let finalTranscript = '';
 
       for (let i = event.resultIndex; i < event.results.length; i += 1) {
-        const currentTranscript = event.results[i][0].transcript;
+        const currentTranscript = normalizeSpeechText(event.results[i][0].transcript);
         if (event.results[i].isFinal) {
-          finalTranscript += `${currentTranscript} `;
+          if (!processedFinalResultsRef.current.has(i)) {
+            committedSpeechRef.current = mergeSpeechText(committedSpeechRef.current, currentTranscript);
+            processedFinalResultsRef.current.add(i);
+          }
         } else {
-          interimTranscript += currentTranscript;
+          interimTranscript = mergeSpeechText(interimTranscript, currentTranscript);
         }
       }
 
       if (interimTranscript) setTranscript(interimTranscript);
-      if (finalTranscript) {
-        setInput((prev) => prev + finalTranscript);
+      if (committedSpeechRef.current) {
+        setInput(appendSpeechToBase(inputAtSpeechStartRef.current, committedSpeechRef.current));
         setTranscript('');
       }
     };
@@ -94,6 +132,9 @@ export default function ChatWidget({ token, onTaskUpdate }) {
     };
 
     recognitionRef.current = recognition;
+    return () => {
+      recognition.abort();
+    };
   }, []);
 
   useEffect(() => {
@@ -135,7 +176,10 @@ export default function ChatWidget({ token, onTaskUpdate }) {
   }, [isOpen]);
 
   const startListening = () => {
-    if (recognitionRef.current && !isListening) recognitionRef.current.start();
+    if (recognitionRef.current && !isListening) {
+      inputAtSpeechStartRef.current = input;
+      recognitionRef.current.start();
+    }
   };
 
   const stopListening = () => {

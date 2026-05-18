@@ -37,7 +37,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Landing token={token} />} />
+        <Route path="/" element={token ? <Navigate to="/dashboard" /> : <Landing token={token} />} />
         <Route path="/login" element={!token ? <Login setAuth={setAuth} /> : <Navigate to="/dashboard" />} />
         <Route path="/register" element={!token ? <Register setAuth={setAuth} /> : <Navigate to="/dashboard" />} />
         <Route path="/calendar/callback" element={<CalendarCallback />} /> 
