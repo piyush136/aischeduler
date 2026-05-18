@@ -23,6 +23,9 @@ Thumbs.db
 *.swp
 *.swo
 
+# Local notes
+learn/
+
 # Build outputs
 dist/
 build/

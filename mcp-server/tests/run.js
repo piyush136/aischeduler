@@ -680,6 +680,65 @@ function getChatHandler(router) {
     assert.equal(capturedHistory[0].role, 'assistant');
   });
 
+  await run('chat route handles past task requests without calling Gemini', async () => {
+    let llmCalled = false;
+    let capturedArgs = null;
+    const mockLlmClient = {
+      run: async () => {
+        llmCalled = true;
+        return { text: 'should not run', toolCall: null };
+      },
+      continueWithFunctionResponse: async () => ({ text: 'should not run', toolCall: null }),
+      getHistory: () => [],
+      clearHistory: () => {}
+    };
+
+    const router = loadWithMocks(path.resolve(__dirname, '../routes/chat.route.js'), {
+      '../llm/client': mockLlmClient,
+      '../tools': {
+        toolMap: {
+          get_tasks: {
+            execute: async args => {
+              capturedArgs = args;
+              return {
+                success: true,
+                filter: 'overdue',
+                count: 1,
+                tasks: [{ title: 'Submit report' }],
+                message: 'Found 1 overdue task.'
+              };
+            }
+          }
+        }
+      }
+    });
+
+    const handler = getChatHandler(router);
+    const req = {
+      body: {
+        message: 'tell me past task',
+        history: [],
+        localDate: '2026-05-18',
+        localTimeString: '09:15:00 AM',
+        userTimezone: 'Asia/Calcutta'
+      },
+      headers: {
+        authorization: 'Bearer test-token'
+      }
+    };
+    const res = createResponse();
+
+    await handler(req, res);
+
+    assert.equal(res.statusCode, 200);
+    assert.equal(llmCalled, false);
+    assert.equal(res.body.directIntent, true);
+    assert.equal(res.body.toolUsed, 'get_tasks');
+    assert.equal(res.body.reply, 'Found 1 overdue task.');
+    assert.equal(capturedArgs.filter, 'overdue');
+    assert.equal(capturedArgs._meta.localDate, '2026-05-18');
+  });
+
   if (process.exitCode) {
     process.exit(process.exitCode);
   }

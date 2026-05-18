@@ -11,6 +11,21 @@ const {
 
 const MAX_TOOL_CHAIN = 10;
 
+function getDirectToolIntent(message) {
+  const text = String(message || '').toLowerCase().trim();
+
+  if (!text) return null;
+
+  if (/\b(past|overdue|late|missed)\b/.test(text) && /\b(task|tasks|todo|todos)\b/.test(text)) {
+    return {
+      toolName: 'get_tasks',
+      args: { filter: 'overdue' }
+    };
+  }
+
+  return null;
+}
+
 router.get('/health', (req, res) => {
   res.json({
     status: 'ok',
@@ -49,6 +64,26 @@ router.post('/chat', async (req, res) => {
     const systemPrompt = buildSystemPrompt(executionMeta);
     const debugTrace = [];
     const normalizedHistory = Array.isArray(history) ? [...history] : [];
+
+    const directIntent = getDirectToolIntent(message);
+    if (directIntent) {
+      const tool = toolMap[directIntent.toolName];
+      const executionArgs = normalizeExecutionArgs(directIntent.args, executionMeta);
+
+      if (tool) {
+        console.log(`[MCP] Executing direct intent: ${directIntent.toolName}`, executionArgs);
+        const toolResult = await tool.execute(executionArgs, token);
+
+        return res.json({
+          reply: summarizeToolResult(directIntent.toolName, toolResult),
+          data: toolResult,
+          history: llmClient.getHistory(),
+          toolUsed: directIntent.toolName,
+          directIntent: true,
+          debugTrace: [{ step: 'direct_intent', tool: directIntent.toolName, arguments: executionArgs }]
+        });
+      }
+    }
 
     const lastHistoryItem = normalizedHistory[normalizedHistory.length - 1];
     if (lastHistoryItem?.role === 'user' && lastHistoryItem.content === message) {
