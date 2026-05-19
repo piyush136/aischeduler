@@ -134,7 +134,8 @@ exports.googleCallback = async (req, res) => {
         // The Redirect URI is what Google sends the code TO.
         // If Google sends code to Backend (5000), Backend can redirect current user to Frontend (5173).
         
-        const frontendUrl = `http://localhost:5173/calendar/callback?code=${code}`;
+        const frontendBaseUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/+$/, '');
+        const frontendUrl = `${frontendBaseUrl}/calendar/callback?code=${encodeURIComponent(code)}`;
         res.redirect(frontendUrl);
         
     } catch (err) {
