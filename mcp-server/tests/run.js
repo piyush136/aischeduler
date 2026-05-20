@@ -249,6 +249,216 @@ function getChatHandler(router) {
     }
   });
 
+  await run('llm client extracts curl configs and rotates Gemini requests round-robin', async () => {
+    const previousApiKey = process.env.GEMINI_API_KEY;
+    const previousModel = process.env.GEMINI_MODEL;
+    const previousRotationMode = process.env.GEMINI_ROTATION_MODE;
+    const previousCurlCommands = process.env.GEMINI_CURL_COMMANDS;
+    const previousAdditionalCurls = process.env.GEMINI_ADDITIONAL_CURLS;
+    const previousApiKey2 = process.env.GEMINI_API_KEY_2;
+    const previousModel2 = process.env.GEMINI_MODEL_2;
+    const previousApiKey3 = process.env.GEMINI_API_KEY_3;
+    const previousModel3 = process.env.GEMINI_MODEL_3;
+    const previousApiKey4 = process.env.GEMINI_API_KEY_4;
+    const previousModel4 = process.env.GEMINI_MODEL_4;
+    const previousApiKey5 = process.env.GEMINI_API_KEY_5;
+    const previousModel5 = process.env.GEMINI_MODEL_5;
+
+    process.env.GEMINI_API_KEY = 'primary-key';
+    process.env.GEMINI_MODEL = 'primary-model';
+    process.env.GEMINI_ROTATION_MODE = 'round_robin';
+    process.env.GEMINI_API_KEY_2 = 'key-two';
+    process.env.GEMINI_MODEL_2 = 'model-two';
+    process.env.GEMINI_API_KEY_3 = 'key-three';
+    process.env.GEMINI_MODEL_3 = 'model-three';
+    process.env.GEMINI_API_KEY_4 = 'key-four';
+    process.env.GEMINI_MODEL_4 = 'model-four';
+    process.env.GEMINI_API_KEY_5 = 'key-five';
+    process.env.GEMINI_MODEL_5 = 'model-five';
+    delete process.env.GEMINI_CURL_COMMANDS;
+    delete process.env.GEMINI_ADDITIONAL_CURLS;
+
+    const clientPath = path.resolve(__dirname, '../llm/client.js');
+    const calls = [];
+
+    try {
+      const llmClient = loadWithMocks(clientPath, {
+        axios: {
+          post: async (url, body, config) => {
+            calls.push({ url, body, config });
+            return {
+              data: {
+                candidates: [{
+                  content: {
+                    role: 'model',
+                    parts: [{ text: 'ok' }]
+                  }
+                }]
+              }
+            };
+          }
+        }
+      });
+
+      await llmClient.generateContent([{ role: 'user', parts: [{ text: 'one' }] }]);
+      await llmClient.generateContent([{ role: 'user', parts: [{ text: 'two' }] }]);
+      await llmClient.generateContent([{ role: 'user', parts: [{ text: 'three' }] }]);
+      await llmClient.generateContent([{ role: 'user', parts: [{ text: 'four' }] }]);
+      await llmClient.generateContent([{ role: 'user', parts: [{ text: 'five' }] }]);
+      await llmClient.generateContent([{ role: 'user', parts: [{ text: 'six' }] }]);
+
+      assert.match(calls[0].url, /models\/primary-model:generateContent/);
+      assert.match(calls[1].url, /models\/model-two:generateContent/);
+      assert.match(calls[2].url, /models\/model-three:generateContent/);
+      assert.match(calls[3].url, /models\/model-four:generateContent/);
+      assert.match(calls[4].url, /models\/model-five:generateContent/);
+      assert.match(calls[5].url, /models\/primary-model:generateContent/);
+      assert.equal(calls[0].config.headers['X-goog-api-key'], 'primary-key');
+      assert.equal(calls[1].config.headers['X-goog-api-key'], 'key-two');
+      assert.equal(calls[2].config.headers['X-goog-api-key'], 'key-three');
+      assert.equal(calls[3].config.headers['X-goog-api-key'], 'key-four');
+      assert.equal(calls[4].config.headers['X-goog-api-key'], 'key-five');
+
+      const configs = llmClient.getGeminiConfigs();
+      assert.equal(configs.length, 5);
+      assert.equal(configs[0].usageStats.requests, 2);
+      assert.equal(configs[1].usageStats.requests, 1);
+      assert.equal(configs[2].usageStats.requests, 1);
+      assert.equal(configs[3].usageStats.requests, 1);
+      assert.equal(configs[4].usageStats.requests, 1);
+    } finally {
+      delete require.cache[clientPath];
+
+      if (previousApiKey === undefined) delete process.env.GEMINI_API_KEY;
+      else process.env.GEMINI_API_KEY = previousApiKey;
+
+      if (previousModel === undefined) delete process.env.GEMINI_MODEL;
+      else process.env.GEMINI_MODEL = previousModel;
+
+      if (previousRotationMode === undefined) delete process.env.GEMINI_ROTATION_MODE;
+      else process.env.GEMINI_ROTATION_MODE = previousRotationMode;
+
+      if (previousCurlCommands === undefined) delete process.env.GEMINI_CURL_COMMANDS;
+      else process.env.GEMINI_CURL_COMMANDS = previousCurlCommands;
+
+      if (previousAdditionalCurls === undefined) delete process.env.GEMINI_ADDITIONAL_CURLS;
+      else process.env.GEMINI_ADDITIONAL_CURLS = previousAdditionalCurls;
+
+      if (previousApiKey2 === undefined) delete process.env.GEMINI_API_KEY_2;
+      else process.env.GEMINI_API_KEY_2 = previousApiKey2;
+
+      if (previousModel2 === undefined) delete process.env.GEMINI_MODEL_2;
+      else process.env.GEMINI_MODEL_2 = previousModel2;
+
+      if (previousApiKey3 === undefined) delete process.env.GEMINI_API_KEY_3;
+      else process.env.GEMINI_API_KEY_3 = previousApiKey3;
+
+      if (previousModel3 === undefined) delete process.env.GEMINI_MODEL_3;
+      else process.env.GEMINI_MODEL_3 = previousModel3;
+
+      if (previousApiKey4 === undefined) delete process.env.GEMINI_API_KEY_4;
+      else process.env.GEMINI_API_KEY_4 = previousApiKey4;
+
+      if (previousModel4 === undefined) delete process.env.GEMINI_MODEL_4;
+      else process.env.GEMINI_MODEL_4 = previousModel4;
+
+      if (previousApiKey5 === undefined) delete process.env.GEMINI_API_KEY_5;
+      else process.env.GEMINI_API_KEY_5 = previousApiKey5;
+
+      if (previousModel5 === undefined) delete process.env.GEMINI_MODEL_5;
+      else process.env.GEMINI_MODEL_5 = previousModel5;
+    }
+  });
+
+  await run('llm client fails over to next Gemini config after 503', async () => {
+    const previousApiKey = process.env.GEMINI_API_KEY;
+    const previousModel = process.env.GEMINI_MODEL;
+    const previousRotationMode = process.env.GEMINI_ROTATION_MODE;
+    const previousCurlCommands = process.env.GEMINI_CURL_COMMANDS;
+    const previousAdditionalCurls = process.env.GEMINI_ADDITIONAL_CURLS;
+    const previousCooldownMs = process.env.GEMINI_COOLDOWN_MS;
+
+    process.env.GEMINI_API_KEY = 'primary-key';
+    process.env.GEMINI_MODEL = 'primary-model';
+    process.env.GEMINI_ROTATION_MODE = 'round_robin';
+    process.env.GEMINI_COOLDOWN_MS = '30000';
+    process.env.GEMINI_CURL_COMMANDS = 'curl "https://generativelanguage.googleapis.com/v1beta/models/backup-model:generateContent" -H "X-goog-api-key: backup-key"';
+    delete process.env.GEMINI_ADDITIONAL_CURLS;
+
+    const clientPath = path.resolve(__dirname, '../llm/client.js');
+    const calls = [];
+
+    try {
+      const llmClient = loadWithMocks(clientPath, {
+        axios: {
+          post: async (url, body, config) => {
+            calls.push({ url, body, config });
+
+            if (calls.length === 1) {
+              const error = new Error('Request failed with status code 503');
+              error.response = {
+                status: 503,
+                data: {
+                  error: {
+                    message: 'This model is currently experiencing high demand.',
+                    status: 'UNAVAILABLE'
+                  }
+                }
+              };
+              throw error;
+            }
+
+            return {
+              data: {
+                candidates: [{
+                  content: {
+                    role: 'model',
+                    parts: [{ text: 'backup ok' }]
+                  }
+                }]
+              }
+            };
+          }
+        }
+      });
+
+      const result = await llmClient.generateContent([{ role: 'user', parts: [{ text: 'hello' }] }]);
+
+      assert.equal(result.text, 'backup ok');
+      assert.equal(calls.length, 2);
+      assert.match(calls[0].url, /models\/primary-model:generateContent/);
+      assert.match(calls[1].url, /models\/backup-model:generateContent/);
+
+      const configs = llmClient.getGeminiConfigs();
+      assert.equal(configs[0].usageStats.requests, 1);
+      assert.equal(configs[0].usageStats.failures, 1);
+      assert.equal(configs[0].inCooldown, true);
+      assert.ok(configs[0].lastFailureTimestamp);
+      assert.equal(configs[1].usageStats.requests, 1);
+      assert.equal(configs[1].usageStats.successes, 1);
+    } finally {
+      delete require.cache[clientPath];
+
+      if (previousApiKey === undefined) delete process.env.GEMINI_API_KEY;
+      else process.env.GEMINI_API_KEY = previousApiKey;
+
+      if (previousModel === undefined) delete process.env.GEMINI_MODEL;
+      else process.env.GEMINI_MODEL = previousModel;
+
+      if (previousRotationMode === undefined) delete process.env.GEMINI_ROTATION_MODE;
+      else process.env.GEMINI_ROTATION_MODE = previousRotationMode;
+
+      if (previousCurlCommands === undefined) delete process.env.GEMINI_CURL_COMMANDS;
+      else process.env.GEMINI_CURL_COMMANDS = previousCurlCommands;
+
+      if (previousAdditionalCurls === undefined) delete process.env.GEMINI_ADDITIONAL_CURLS;
+      else process.env.GEMINI_ADDITIONAL_CURLS = previousAdditionalCurls;
+
+      if (previousCooldownMs === undefined) delete process.env.GEMINI_COOLDOWN_MS;
+      else process.env.GEMINI_COOLDOWN_MS = previousCooldownMs;
+    }
+  });
+
   await run('update_task summarizes concrete changes', async () => {
     const axiosMock = {
       patch: async () => ({

@@ -27,10 +27,22 @@ function getDirectToolIntent(message) {
 }
 
 router.get('/health', (req, res) => {
+  const geminiConfigs = llmClient.getGeminiConfigs();
+
   res.json({
     status: 'ok',
     service: 'mcp-server',
     model: process.env.GEMINI_MODEL || 'gemini-2.0-flash',
+    rotationMode: process.env.GEMINI_ROTATION_MODE || null,
+    geminiConfigurations: geminiConfigs.map(config => ({
+      id: config.id,
+      source: config.source,
+      model: config.model,
+      usageStats: config.usageStats,
+      lastFailureTimestamp: config.lastFailureTimestamp,
+      cooldownUntil: config.cooldownUntil,
+      inCooldown: config.inCooldown
+    })),
     backendUrl: process.env.BACKEND_URL || null,
     timestamp: new Date().toISOString()
   });

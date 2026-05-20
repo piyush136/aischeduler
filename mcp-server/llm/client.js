@@ -1,9 +1,125 @@
 const axios = require('axios');
 
-const apiKey = process.env.GEMINI_API_KEY;
-if (!apiKey) {
+const primaryApiKey = process.env.GEMINI_API_KEY;
+if (!primaryApiKey) {
   console.error('[LLM] ERROR: GEMINI_API_KEY is not set in environment variables');
   throw new Error('GEMINI_API_KEY is required');
+}
+
+const DEFAULT_GEMINI_MODEL = 'gemini-2.0-flash';
+const DEFAULT_COOLDOWN_MS = 60 * 1000;
+
+function parseGeminiCurl(curlCommand) {
+  const command = String(curlCommand || '');
+  const apiKeyMatch = command.match(/X-goog-api-key:\s*([^'"\s\\]+)/i);
+  const modelMatch = command.match(/\/models\/([^/:\s"'?]+):generateContent/i);
+
+  if (!apiKeyMatch?.[1] || !modelMatch?.[1]) {
+    return null;
+  }
+
+  return {
+    apiKey: apiKeyMatch[1].trim(),
+    model: modelMatch[1].trim()
+  };
+}
+
+function parseGeminiCurlConfigs(rawCurlInput) {
+  if (!rawCurlInput) return [];
+
+  const normalized = String(rawCurlInput)
+    .replace(/\\r\\n/g, '\n')
+    .replace(/\\n/g, '\n');
+  const commands = normalized
+    .split(/(?=\bcurl\s+["']?https:\/\/generativelanguage\.googleapis\.com)/i)
+    .map(command => command.trim())
+    .filter(Boolean);
+
+  return commands
+    .map(parseGeminiCurl)
+    .filter(Boolean);
+}
+
+function getIndexedEnvGeminiConfigs() {
+  const configs = [];
+
+  for (let index = 2; index <= 20; index += 1) {
+    const apiKey = process.env[`GEMINI_API_KEY_${index}`];
+    if (!apiKey) continue;
+
+    configs.push({
+      apiKey,
+      model: process.env[`GEMINI_MODEL_${index}`] || process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL
+    });
+  }
+
+  return configs;
+}
+
+function createGeminiConfig({ apiKey, model, source, index }) {
+  return {
+    id: `${source}-${index}`,
+    source,
+    apiKey,
+    model,
+    usageStats: {
+      requests: 0,
+      successes: 0,
+      failures: 0
+    },
+    lastFailureTimestamp: null,
+    cooldownUntil: null
+  };
+}
+
+function isRetryableGeminiError(error) {
+  const status = error?.response?.status;
+  return status === 429 || status >= 500;
+}
+
+function buildGeminiConfigs() {
+  const primaryModel = process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
+  const seenConfigKeys = new Set();
+  const configs = [
+    createGeminiConfig({
+      apiKey: primaryApiKey,
+      model: primaryModel,
+      source: 'env',
+      index: 1
+    })
+  ];
+  seenConfigKeys.add(`${primaryApiKey}:${primaryModel}`);
+
+  for (const envConfig of getIndexedEnvGeminiConfigs()) {
+    const configKey = `${envConfig.apiKey}:${envConfig.model}`;
+    if (seenConfigKeys.has(configKey)) continue;
+
+    seenConfigKeys.add(configKey);
+    configs.push(createGeminiConfig({
+      ...envConfig,
+      source: 'env',
+      index: configs.length + 1
+    }));
+  }
+
+  const rawCurlInput = [
+    process.env.GEMINI_CURL_COMMANDS,
+    process.env.GEMINI_ADDITIONAL_CURLS
+  ].filter(Boolean).join('\n');
+
+  for (const parsedConfig of parseGeminiCurlConfigs(rawCurlInput)) {
+    const configKey = `${parsedConfig.apiKey}:${parsedConfig.model}`;
+    if (seenConfigKeys.has(configKey)) continue;
+
+    seenConfigKeys.add(configKey);
+    configs.push(createGeminiConfig({
+      ...parsedConfig,
+      source: 'curl',
+      index: configs.length + 1
+    }));
+  }
+
+  return configs;
 }
 
 function getLlmErrorMessage(error) {
@@ -33,6 +149,72 @@ class LLMClient {
     this.geminiHistory = [];
     this.activeTools = [];
     this.systemPrompt = '';
+    this.geminiConfigs = buildGeminiConfigs();
+    this.rotationIndex = 0;
+  }
+
+  getRotationMode() {
+    return String(process.env.GEMINI_ROTATION_MODE || '').toLowerCase();
+  }
+
+  isRoundRobinEnabled() {
+    return this.getRotationMode() === 'round_robin';
+  }
+
+  getGeminiConfigs() {
+    return this.geminiConfigs.map(config => ({
+      id: config.id,
+      source: config.source,
+      model: config.model,
+      apiKey: config.apiKey,
+      usageStats: { ...config.usageStats },
+      lastFailureTimestamp: config.lastFailureTimestamp,
+      cooldownUntil: config.cooldownUntil,
+      inCooldown: Boolean(config.cooldownUntil && config.cooldownUntil > Date.now())
+    }));
+  }
+
+  selectGeminiConfig() {
+    if (!this.isRoundRobinEnabled() || this.geminiConfigs.length === 1) {
+      return this.geminiConfigs[0];
+    }
+
+    const totalConfigs = this.geminiConfigs.length;
+    const now = Date.now();
+
+    for (let attempt = 0; attempt < totalConfigs; attempt += 1) {
+      const index = this.rotationIndex % totalConfigs;
+      this.rotationIndex = (this.rotationIndex + 1) % totalConfigs;
+      const config = this.geminiConfigs[index];
+
+      if (!config.cooldownUntil || config.cooldownUntil <= now) {
+        return config;
+      }
+    }
+
+    return this.geminiConfigs[(this.rotationIndex + totalConfigs - 1) % totalConfigs];
+  }
+
+  recordGeminiSuccess(config) {
+    config.usageStats.successes += 1;
+    config.cooldownUntil = null;
+  }
+
+  recordGeminiFailure(config, error) {
+    config.usageStats.failures += 1;
+    config.lastFailureTimestamp = new Date().toISOString();
+
+    if (isRetryableGeminiError(error)) {
+      const retryAfter = Number(error?.response?.headers?.['retry-after']);
+      const cooldownMs = Number.isFinite(retryAfter) && retryAfter > 0
+        ? retryAfter * 1000
+        : Number(process.env.GEMINI_COOLDOWN_MS || DEFAULT_COOLDOWN_MS);
+      config.cooldownUntil = Date.now() + cooldownMs;
+    }
+  }
+
+  getMaxGeminiAttempts() {
+    return this.isRoundRobinEnabled() ? this.geminiConfigs.length : 1;
   }
 
   convertHistoryToGemini(history) {
@@ -156,7 +338,6 @@ class LLMClient {
   }
 
   async generateContent(contents) {
-    const model = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
     const payload = {
       contents: this.trimLeadingModelMessages(contents)
     };
@@ -181,14 +362,42 @@ class LLMClient {
       }];
     }
 
-    const response = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-      payload,
-      {
-        params: { key: apiKey },
-        headers: { 'Content-Type': 'application/json' }
+    let response;
+    let lastError = null;
+    const maxAttempts = this.getMaxGeminiAttempts();
+
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      const config = this.selectGeminiConfig();
+      config.usageStats.requests += 1;
+
+      try {
+        response = await axios.post(
+          `https://generativelanguage.googleapis.com/v1beta/models/${config.model}:generateContent`,
+          payload,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'X-goog-api-key': config.apiKey
+            }
+          }
+        );
+        this.recordGeminiSuccess(config);
+        break;
+      } catch (error) {
+        this.recordGeminiFailure(config, error);
+        lastError = error;
+
+        if (!isRetryableGeminiError(error) || attempt === maxAttempts - 1) {
+          throw error;
+        }
+
+        console.warn(`[Gemini] ${config.id} failed with retryable status ${error?.response?.status}. Trying next Gemini configuration.`);
       }
-    );
+    }
+
+    if (!response) {
+      throw lastError || new Error('No response from Gemini API');
+    }
 
     const candidates = response.data.candidates || [];
     if (candidates.length === 0) {
