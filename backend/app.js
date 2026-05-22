@@ -1,12 +1,5 @@
 const express = require('express');
 const cors = require('cors');
-const connectDB = require('./config/db');
-
-// Connect to Database
-connectDB();
-
-// Initialize Telegram Bot (if token is set in .env)
-require('./config/telegram');
 
 const taskRoutes = require('./routes/task.routes');
 // const routineRoutes = require('./routes/routine.routes');
