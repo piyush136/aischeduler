@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
-import { MessageCircle, Copy, CheckCircle, AlertCircle, Loader } from 'lucide-react';
+import { MessageCircle, Copy, CheckCircle, AlertCircle, Loader, Unlink } from 'lucide-react';
 import { apiUrl } from '../config/api';
+
+const TELEGRAM_BOT_USERNAME = (import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'aitaskmanger_bot').replace(/^@/, '');
 
 export default function TelegramConnect({ token, onLinked }) {
   const [activeStep, setActiveStep] = useState(1); // 1: Generate code, 2: Link instructions
@@ -10,6 +12,56 @@ export default function TelegramConnect({ token, onLinked }) {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [status, setStatus] = useState({ loading: true, linked: false, telegram: null });
+  const wasLinkedRef = useRef(false);
+  const hasLoadedStatusRef = useRef(false);
+
+  const authHeaders = { Authorization: `Bearer ${token}` };
+
+  const fetchStatus = async ({ silent = false } = {}) => {
+    if (!silent) {
+      setStatus((current) => ({ ...current, loading: true }));
+    }
+
+    try {
+      const response = await axios.get(apiUrl('/telegram/status'), {
+        headers: authHeaders
+      });
+      const isLinked = Boolean(response.data.linked);
+      setStatus({
+        loading: false,
+        linked: isLinked,
+        telegram: response.data.telegram || null
+      });
+
+      if (isLinked) {
+        setActiveStep(1);
+        setLinkingCode(null);
+        if (hasLoadedStatusRef.current && !wasLinkedRef.current && onLinked) onLinked();
+      }
+      wasLinkedRef.current = isLinked;
+      hasLoadedStatusRef.current = true;
+    } catch (err) {
+      setStatus((current) => ({ ...current, loading: false }));
+      if (!silent) {
+        setError(err.response?.data?.message || 'Failed to load Telegram status');
+      }
+    }
+  };
+
+  useEffect(() => {
+    fetchStatus();
+  }, []);
+
+  useEffect(() => {
+    if (activeStep !== 2 || status.linked) return undefined;
+
+    const interval = setInterval(() => {
+      fetchStatus({ silent: true });
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [activeStep, status.linked]);
 
   const generateLinkingCode = async () => {
     setLoading(true);
@@ -17,7 +69,7 @@ export default function TelegramConnect({ token, onLinked }) {
     setMessage('');
     try {
       const response = await axios.post(apiUrl('/telegram/link-code'), {}, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: authHeaders
       });
 
       if (response.data.success) {
@@ -29,6 +81,29 @@ export default function TelegramConnect({ token, onLinked }) {
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to generate linking code');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const unlinkTelegram = async () => {
+    setLoading(true);
+    setError('');
+    setMessage('');
+
+    try {
+      const response = await axios.delete(apiUrl('/telegram/link'), {
+        headers: authHeaders
+      });
+
+      setStatus({ loading: false, linked: false, telegram: null });
+      wasLinkedRef.current = false;
+      setActiveStep(1);
+      setLinkingCode(null);
+      setMessage(response.data.message || 'Telegram account disconnected.');
+      if (onLinked) onLinked();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to disconnect Telegram');
     } finally {
       setLoading(false);
     }
@@ -48,8 +123,8 @@ export default function TelegramConnect({ token, onLinked }) {
           <MessageCircle size={20} className="text-sky-600" />
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-slate-900">Connect Telegram Bot</h3>
-          <p className="text-sm text-slate-500">Create tasks by sending messages to our Telegram bot</p>
+          <h3 className="text-lg font-semibold text-slate-900">Telegram Bot</h3>
+          <p className="text-sm text-slate-500">Create tasks by sending messages to @{TELEGRAM_BOT_USERNAME}</p>
         </div>
       </div>
 
@@ -68,8 +143,45 @@ export default function TelegramConnect({ token, onLinked }) {
         </div>
       )}
 
+      {status.loading && (
+        <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
+          <Loader size={16} className="animate-spin" />
+          Checking Telegram connection...
+        </div>
+      )}
+
+      {!status.loading && status.linked && (
+        <div className="space-y-4">
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+            <div className="flex items-start gap-3">
+              <CheckCircle size={20} className="mt-0.5 flex-shrink-0 text-emerald-600" />
+              <div>
+                <p className="font-semibold text-emerald-900">Telegram is linked</p>
+                <p className="mt-1 text-sm text-emerald-700">
+                  {status.telegram?.telegram_username
+                    ? `Connected as @${status.telegram.telegram_username}`
+                    : 'Your Telegram account is connected.'}
+                </p>
+                <p className="mt-1 text-xs text-emerald-700">
+                  You can disconnect from here or send /unlink to @{TELEGRAM_BOT_USERNAME}.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={unlinkTelegram}
+            disabled={loading}
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-rose-200 bg-white px-4 py-2.5 font-semibold text-rose-600 transition-colors hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {loading ? <Loader size={18} className="animate-spin" /> : <Unlink size={18} />}
+            Disconnect Telegram
+          </button>
+        </div>
+      )}
+
       {/* Step 1: Generate Code */}
-      {activeStep === 1 && (
+      {!status.loading && !status.linked && activeStep === 1 && (
         <div className="space-y-4">
           <p className="text-sm text-slate-600">
             Click the button below to generate a unique linking code. You'll use this code to connect your Telegram account.
@@ -95,7 +207,7 @@ export default function TelegramConnect({ token, onLinked }) {
       )}
 
       {/* Step 2: Link Instructions */}
-      {activeStep === 2 && linkingCode && (
+      {!status.loading && !status.linked && activeStep === 2 && linkingCode && (
         <div className="space-y-5">
           {/* Code Box */}
           <div className="rounded-lg bg-gradient-to-r from-sky-50 to-blue-50 p-4 border border-sky-100">
@@ -124,7 +236,7 @@ export default function TelegramConnect({ token, onLinked }) {
                 <span className="flex-shrink-0 flex h-6 w-6 items-center justify-center rounded-full bg-sky-100 text-xs font-semibold text-sky-600">
                   1
                 </span>
-                <span>Open Telegram and search for: <strong>@ai_task_manager_bot</strong></span>
+                <span>Open Telegram and search for: <strong>@{TELEGRAM_BOT_USERNAME}</strong></span>
               </li>
               <li className="flex gap-3">
                 <span className="flex-shrink-0 flex h-6 w-6 items-center justify-center rounded-full bg-sky-100 text-xs font-semibold text-sky-600">
@@ -165,7 +277,7 @@ export default function TelegramConnect({ token, onLinked }) {
             </button>
             <button
               onClick={() => {
-                window.open('https://t.me/ai_task_manager_bot', '_blank');
+                window.open(`https://t.me/${TELEGRAM_BOT_USERNAME}`, '_blank');
               }}
               className="flex-1 rounded-lg bg-sky-600 px-4 py-2 font-medium text-white transition-colors hover:bg-sky-700"
             >

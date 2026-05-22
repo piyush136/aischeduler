@@ -1,7 +1,15 @@
 const TelegramService = require('../services/telegram.service');
-const User = require('../models/user.model');
 
 class TelegramController {
+  static _getBot() {
+    const { getBot } = require('../config/telegram');
+    const bot = getBot();
+    if (!bot) {
+      throw new Error('Telegram bot is not initialized. Set TELEGRAM_BOT_TOKEN in backend/.env and restart the server.');
+    }
+    return bot;
+  }
+
   /**
    * POST /telegram/link-code
    * Generate a linking code for the authenticated user
@@ -26,6 +34,44 @@ class TelegramController {
       return res.status(500).json({
         success: false,
         message: 'Failed to generate linking code',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * GET /telegram/status
+   * Get Telegram link status for the authenticated user
+   */
+  static async getLinkStatus(req, res) {
+    try {
+      const userId = req.user.id;
+      const result = await TelegramService.getLinkStatus(userId);
+      return res.status(200).json(result);
+    } catch (error) {
+      console.error('Error in getLinkStatus:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch Telegram link status',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * DELETE /telegram/link
+   * Unlink Telegram for the authenticated user
+   */
+  static async unlinkAccount(req, res) {
+    try {
+      const userId = req.user.id;
+      const result = await TelegramService.unlinkByUserId(userId);
+      return res.status(200).json(result);
+    } catch (error) {
+      console.error('Error in unlinkAccount:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to unlink Telegram account',
         error: error.message
       });
     }
@@ -116,6 +162,8 @@ class TelegramController {
       } else if (messageText.startsWith('/link')) {
         const linkingCode = messageText.split(' ')[1];
         await this._handleLinkCommand(telegramId, telegramUsername, linkingCode);
+      } else if (messageText.startsWith('/unlink')) {
+        await this._handleUnlinkCommand(telegramId);
       } else if (messageText.startsWith('/tasks')) {
         await this._handleTasksCommand(telegramId);
       } else if (messageText.startsWith('/help')) {
@@ -133,7 +181,7 @@ class TelegramController {
    * Handle /start command
    */
   static async _handleStartCommand(telegramId) {
-    const bot = require('../config/telegram').bot;
+    const bot = this._getBot();
     const message = TelegramService.getStartMessage();
 
     try {
@@ -150,7 +198,7 @@ class TelegramController {
    * Handle /link {code} command
    */
   static async _handleLinkCommand(telegramId, telegramUsername, linkingCode) {
-    const bot = require('../config/telegram').bot;
+    const bot = this._getBot();
 
     try {
       if (!linkingCode) {
@@ -178,10 +226,29 @@ class TelegramController {
   }
 
   /**
+   * Handle /unlink command
+   */
+  static async _handleUnlinkCommand(telegramId) {
+    const bot = this._getBot();
+
+    try {
+      const result = await TelegramService.unlinkByTelegramId(telegramId);
+      await bot.telegram.sendMessage(telegramId, result.message);
+    } catch (error) {
+      console.error('Error handling unlink command:', error);
+      await bot.telegram.sendMessage(
+        telegramId,
+        'Failed to unlink your account. Please try again.'
+      );
+    }
+  }
+
+
+  /**
    * Handle /tasks command
    */
   static async _handleTasksCommand(telegramId) {
-    const bot = require('../config/telegram').bot;
+    const bot = this._getBot();
 
     try {
       const user = await TelegramService.getUserByTelegramId(telegramId);
@@ -209,7 +276,7 @@ class TelegramController {
    * Handle /help command
    */
   static async _handleHelpCommand(telegramId) {
-    const bot = require('../config/telegram').bot;
+    const bot = this._getBot();
     const message = TelegramService.getHelpMessage();
 
     try {
@@ -225,7 +292,7 @@ class TelegramController {
    * Handle regular message (task creation)
    */
   static async _handleTaskCreation(telegramId, messageText) {
-    const bot = require('../config/telegram').bot;
+    const bot = this._getBot();
 
     try {
       const user = await TelegramService.getUserByTelegramId(telegramId);
@@ -245,9 +312,7 @@ class TelegramController {
       const result = await TelegramService.createTaskFromMessage(user._id, messageText);
 
       // Send response
-      await bot.telegram.sendMessage(telegramId, result.message, {
-        parse_mode: 'HTML'
-      });
+      await bot.telegram.sendMessage(telegramId, result.message);
     } catch (error) {
       console.error('Error creating task:', error);
       await bot.telegram.sendMessage(

@@ -1,7 +1,39 @@
 const axios = require('axios');
+const jwt = require('jsonwebtoken');
 const TelegramUser = require('../models/telegramUser.model');
 const User = require('../models/user.model');
 const Task = require('../models/task.model');
+
+function getBotUsername() {
+  return (process.env.TELEGRAM_BOT_USERNAME || 'aitaskmanger_bot').replace(/^@/, '');
+}
+
+function escapeMarkdown(value) {
+  return String(value).replace(/([_*[\]()~`>#+\-=|{}.!])/g, '\\$1');
+}
+
+function buildMcpChatUrl() {
+  const baseUrl = (process.env.MCP_SERVER_URL || 'http://localhost:5001').replace(/\/+$/, '');
+  return baseUrl.endsWith('/mcp') ? `${baseUrl}/chat` : `${baseUrl}/mcp/chat`;
+}
+
+function getLocalContext() {
+  const timezone = process.env.USER_TIMEZONE || process.env.TZ || 'Asia/Kolkata';
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(now);
+  const byType = Object.fromEntries(parts.map(part => [part.type, part.value]));
+
+  return {
+    localDate: `${byType.year}-${byType.month}-${byType.day}`,
+    localTimeString: now.toLocaleTimeString('en-US', { timeZone: timezone }),
+    userTimezone: timezone
+  };
+}
 
 class TelegramService {
   /**
@@ -14,11 +46,17 @@ class TelegramService {
 
       // Check if TelegramUser document exists for this user, update or create
       let telegramUser = await TelegramUser.findOneAndUpdate(
-        { user_id: userId },
-        { 
-          linking_code: code,
-          is_linked: false,
-          created_at: new Date() // Reset timestamp for TTL
+        { $or: [{ user_id: userId }, { telegram_id: `pending:${userId}` }] },
+        {
+          $set: {
+            user_id: userId,
+            linking_code: code,
+            created_at: new Date() // Reset timestamp for TTL
+          },
+          $setOnInsert: {
+            telegram_id: `pending:${userId}`,
+            is_linked: false
+          }
         },
         { 
           upsert: true,
@@ -31,7 +69,7 @@ class TelegramService {
         success: true,
         linking_code: code,
         expires_in_minutes: 30,
-        message: `Your linking code: ${code}. Send /link ${code} to the Telegram bot to connect your account.`
+        message: `Your linking code: ${code}. Send /link ${code} to @${getBotUsername()} to connect your account.`
       };
     } catch (error) {
       console.error('Error generating linking code:', error);
@@ -61,6 +99,13 @@ class TelegramService {
         };
       }
 
+      // Telegram creates a placeholder row when the user first messages the bot.
+      // Remove that row before attaching the Telegram ID to the web-generated code.
+      await TelegramUser.deleteOne({
+        telegram_id: telegramId,
+        _id: { $ne: telegramUser._id }
+      });
+
       // Update TelegramUser with Telegram info and mark as linked
       const updatedTelegramUser = await TelegramUser.findByIdAndUpdate(
         telegramUser._id,
@@ -88,6 +133,102 @@ class TelegramService {
     } catch (error) {
       console.error('Error linking Telegram account:', error);
       throw new Error('Failed to link account');
+    }
+  }
+
+  /**
+   * Get Telegram link status for a web user.
+   */
+  static async getLinkStatus(userId) {
+    try {
+      const telegramUser = await TelegramUser.findOne({ user_id: userId, is_linked: true })
+        .select('telegram_id telegram_username linked_at');
+
+      return {
+        success: true,
+        linked: Boolean(telegramUser),
+        telegram: telegramUser ? {
+          telegram_id: telegramUser.telegram_id,
+          telegram_username: telegramUser.telegram_username,
+          linked_at: telegramUser.linked_at
+        } : null
+      };
+    } catch (error) {
+      console.error('Error fetching Telegram link status:', error);
+      throw new Error('Failed to fetch Telegram link status');
+    }
+  }
+
+  /**
+   * Unlink Telegram from a web user account.
+   */
+  static async unlinkByUserId(userId) {
+    try {
+      const telegramUser = await TelegramUser.findOne({ user_id: userId, is_linked: true });
+
+      await TelegramUser.deleteMany({
+        user_id: userId,
+        telegram_id: `pending:${userId}`
+      });
+
+      await TelegramUser.updateMany(
+        { user_id: userId },
+        {
+          $set: {
+            user_id: null,
+            is_linked: false,
+            linked_at: null,
+            linking_code: null
+          }
+        }
+      );
+
+      await User.findByIdAndUpdate(userId, { telegram_id: null });
+
+      return {
+        success: true,
+        linked: false,
+        telegram_id: telegramUser?.telegram_id || null,
+        message: telegramUser
+          ? 'Telegram account unlinked successfully.'
+          : 'Telegram account was not linked.'
+      };
+    } catch (error) {
+      console.error('Error unlinking Telegram account:', error);
+      throw new Error('Failed to unlink Telegram account');
+    }
+  }
+
+  /**
+   * Unlink from inside Telegram using the sender's Telegram ID.
+   */
+  static async unlinkByTelegramId(telegramId) {
+    try {
+      const telegramUser = await TelegramUser.findOne({ telegram_id: telegramId, is_linked: true });
+
+      if (!telegramUser) {
+        return {
+          success: false,
+          message: 'Your Telegram account is not linked.'
+        };
+      }
+
+      await User.findByIdAndUpdate(telegramUser.user_id, { telegram_id: null });
+
+      await TelegramUser.findByIdAndUpdate(telegramUser._id, {
+        user_id: null,
+        is_linked: false,
+        linked_at: null,
+        linking_code: null
+      });
+
+      return {
+        success: true,
+        message: 'Telegram account unlinked successfully. You can link again from the web app anytime.'
+      };
+    } catch (error) {
+      console.error('Error unlinking Telegram account by Telegram ID:', error);
+      throw new Error('Failed to unlink Telegram account');
     }
   }
 
@@ -127,7 +268,15 @@ class TelegramService {
 
       // Call MCP Server to parse the natural language message
       // MCP Server returns parsed task data (title, due_at, description, priority, etc.)
-      const mcpResponse = await this._callMCPServer(messageText, user.email);
+      const mcpResponse = await this._callMCPServer(messageText, user);
+
+      if (mcpResponse?.handled) {
+        return {
+          success: mcpResponse.success,
+          message: mcpResponse.message,
+          data: mcpResponse.data
+        };
+      }
 
       if (!mcpResponse || !mcpResponse.tasks || mcpResponse.tasks.length === 0) {
         return {
@@ -143,7 +292,6 @@ class TelegramService {
       for (const parsedTask of mcpResponse.tasks) {
         try {
           const taskPayload = {
-            user_id: userId,
             title: parsedTask.title,
             description: parsedTask.description || '',
             due_at: parsedTask.due_at,
@@ -158,7 +306,7 @@ class TelegramService {
 
           // Call task service to create the task
           const taskService = require('./task.service');
-          const createdTask = await taskService.create(taskPayload);
+          const createdTask = await taskService.create(taskPayload, userId);
 
           createdTasks.push(createdTask);
         } catch (taskError) {
@@ -247,6 +395,7 @@ class TelegramService {
 
 /start - Show welcome message
 /link <code> - Link your Telegram account (get code from web app)
+/unlink - Disconnect this Telegram account
 /tasks - View your recent tasks
 /help - Show this help message
 
@@ -264,19 +413,23 @@ The AI will parse your message and create the task automatically! ✨`;
    * Get start message
    */
   static getStartMessage() {
+    const botUsername = getBotUsername();
+    const markdownBotUsername = escapeMarkdown(botUsername);
+
     return `👋 *Welcome to AI Task Manager Bot!*
 
 I help you create tasks and manage your schedule using natural language.
 
 *First, link your account:*
-1. Go to the web app: www.yourtaskmanager.com
+1. Go to the web app and open Profile > Integrations
 2. Click "Connect Telegram"
 3. Copy the linking code
-4. Send here: /link <code>
+4. Send here to @${markdownBotUsername}: /link <code>
 
 Once linked, you can:
 • Send messages to create tasks: "meeting tomorrow 5pm"
 • View tasks: /tasks
+• Disconnect Telegram: /unlink
 • Get help: /help
 
 Let's get started! 🚀`;
@@ -286,24 +439,41 @@ Let's get started! 🚀`;
    * Call MCP Server to parse natural language into task data
    * MCP Server is running on localhost:5001 (or configured port)
    */
-  static async _callMCPServer(messageText, userEmail) {
+  static async _callMCPServer(messageText, user) {
     try {
-      // MCP Server endpoint for adding tasks with NLP
-      const mcpServerUrl = process.env.MCP_SERVER_URL || 'http://localhost:5001';
+      if (!process.env.JWT_SECRET) {
+        throw new Error('JWT_SECRET is required for Telegram MCP requests');
+      }
+
+      const token = jwt.sign(
+        { id: user.id, email: user.email },
+        process.env.JWT_SECRET,
+        { expiresIn: '10m' }
+      );
+
       const response = await axios.post(
-        `${mcpServerUrl}/parse-task`,
+        buildMcpChatUrl(),
         {
-          text: messageText,
-          user_email: userEmail
+          message: messageText,
+          history: [],
+          ...getLocalContext()
         },
         {
-          timeout: 10000 // 10 second timeout
+          timeout: 20000,
+          headers: { Authorization: `Bearer ${token}` }
         }
       );
 
-      return response.data;
+      const data = response.data || {};
+      const toolResult = data.data;
+      return {
+        handled: true,
+        success: toolResult?.success !== false,
+        message: data.reply || toolResult?.message || 'Done.',
+        data
+      };
     } catch (error) {
-      console.error('Error calling MCP Server:', error.message);
+      console.error('Error calling MCP Server:', error.response?.data || error.message);
       
       // Fallback: Try basic parsing if MCP fails
       const fallbackTask = this._parseTaskBasic(messageText);

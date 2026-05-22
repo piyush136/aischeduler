@@ -944,9 +944,185 @@ function getChatHandler(router) {
     assert.equal(llmCalled, false);
     assert.equal(res.body.directIntent, true);
     assert.equal(res.body.toolUsed, 'get_tasks');
-    assert.equal(res.body.reply, 'Found 1 overdue task.');
+    assert.match(res.body.reply, /Found 1 overdue task/);
+    assert.match(res.body.reply, /Submit report/);
     assert.equal(capturedArgs.filter, 'overdue');
     assert.equal(capturedArgs._meta.localDate, '2026-05-18');
+  });
+
+  await run('chat route directly lists last pending tasks', async () => {
+    let llmCalled = false;
+    let capturedArgs = null;
+    const mockLlmClient = {
+      run: async () => {
+        llmCalled = true;
+        return { text: 'should not run', toolCall: null };
+      },
+      continueWithFunctionResponse: async () => ({ text: 'should not run', toolCall: null }),
+      getHistory: () => [],
+      clearHistory: () => {}
+    };
+
+    const router = loadWithMocks(path.resolve(__dirname, '../routes/chat.route.js'), {
+      '../llm/client': mockLlmClient,
+      '../tools': {
+        toolMap: {
+          get_tasks: {
+            execute: async args => {
+              capturedArgs = args;
+              return {
+                success: true,
+                filter: 'pending',
+                count: 5,
+                tasks: [{ title: 'Review notes', due_at: '2026-05-20T10:00:00.000Z' }],
+                message: 'Found 5 pending tasks.'
+              };
+            }
+          }
+        }
+      }
+    });
+
+    const handler = getChatHandler(router);
+    const req = {
+      body: {
+        message: 'show me last 5 pending tasks',
+        history: [],
+        localDate: '2026-05-18',
+        localTimeString: '09:15:00 AM',
+        userTimezone: 'Asia/Calcutta'
+      },
+      headers: {
+        authorization: 'Bearer test-token'
+      }
+    };
+    const res = createResponse();
+
+    await handler(req, res);
+
+    assert.equal(res.statusCode, 200);
+    assert.equal(llmCalled, false);
+    assert.equal(res.body.directIntent, true);
+    assert.equal(res.body.toolUsed, 'get_tasks');
+    assert.match(res.body.reply, /Review notes/);
+    assert.equal(capturedArgs.filter, 'pending');
+    assert.equal(capturedArgs.sort, 'recent');
+    assert.equal(capturedArgs.limit, 5);
+  });
+
+  await run('chat route directly bulk deletes past pending tasks as overdue', async () => {
+    let llmCalled = false;
+    let capturedArgs = null;
+    const mockLlmClient = {
+      run: async () => {
+        llmCalled = true;
+        return { text: 'should not run', toolCall: null };
+      },
+      continueWithFunctionResponse: async () => ({ text: 'should not run', toolCall: null }),
+      getHistory: () => [],
+      clearHistory: () => {}
+    };
+
+    const router = loadWithMocks(path.resolve(__dirname, '../routes/chat.route.js'), {
+      '../llm/client': mockLlmClient,
+      '../tools': {
+        toolMap: {
+          bulk_delete_tasks: {
+            execute: async args => {
+              capturedArgs = args;
+              return {
+                success: true,
+                deletedCount: 10,
+                deleted: [{ title: 'Old assignment', due_at: '2026-05-10T10:00:00.000Z' }],
+                message: 'Deleted 10 task(s).'
+              };
+            }
+          }
+        }
+      }
+    });
+
+    const handler = getChatHandler(router);
+    const req = {
+      body: {
+        message: 'delete past 10 pending tasks',
+        history: [],
+        localDate: '2026-05-18',
+        localTimeString: '09:15:00 AM',
+        userTimezone: 'Asia/Calcutta'
+      },
+      headers: {
+        authorization: 'Bearer test-token'
+      }
+    };
+    const res = createResponse();
+
+    await handler(req, res);
+
+    assert.equal(res.statusCode, 200);
+    assert.equal(llmCalled, false);
+    assert.equal(res.body.directIntent, true);
+    assert.equal(res.body.toolUsed, 'bulk_delete_tasks');
+    assert.match(res.body.reply, /Old assignment/);
+    assert.equal(capturedArgs.filter, 'overdue');
+    assert.equal(capturedArgs.sort, 'due');
+    assert.equal(capturedArgs.limit, 10);
+  });
+
+  await run('chat route directly checks Telegram integration status', async () => {
+    let llmCalled = false;
+    let capturedArgs = null;
+    const mockLlmClient = {
+      run: async () => {
+        llmCalled = true;
+        return { text: 'should not run', toolCall: null };
+      },
+      continueWithFunctionResponse: async () => ({ text: 'should not run', toolCall: null }),
+      getHistory: () => [],
+      clearHistory: () => {}
+    };
+
+    const router = loadWithMocks(path.resolve(__dirname, '../routes/chat.route.js'), {
+      '../llm/client': mockLlmClient,
+      '../tools': {
+        toolMap: {
+          telegram_status: {
+            execute: async args => {
+              capturedArgs = args;
+              return {
+                success: true,
+                linked: true,
+                telegram: { telegram_username: 'khushi' }
+              };
+            }
+          }
+        }
+      }
+    });
+
+    const handler = getChatHandler(router);
+    const req = {
+      body: {
+        message: 'Show me my profile integrations and confirm Telegram is linked',
+        history: [],
+        localDate: '2026-05-18',
+        localTimeString: '09:15:00 AM',
+        userTimezone: 'Asia/Calcutta'
+      },
+      headers: {
+        authorization: 'Bearer test-token'
+      }
+    };
+    const res = createResponse();
+
+    await handler(req, res);
+
+    assert.equal(res.statusCode, 200);
+    assert.equal(llmCalled, false);
+    assert.equal(res.body.directIntent, true);
+    assert.equal(res.body.toolUsed, 'telegram_status');
+    assert.equal(capturedArgs._meta.localDate, '2026-05-18');
+    assert.match(res.body.reply, /linked as @khushi/);
   });
 
   if (process.exitCode) {

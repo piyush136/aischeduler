@@ -16,10 +16,39 @@ function getDirectToolIntent(message) {
 
   if (!text) return null;
 
-  if (/\b(past|overdue|late|missed)\b/.test(text) && /\b(task|tasks|todo|todos)\b/.test(text)) {
+  const countMatch = text.match(/\b(?:last|past|recent)\s+(\d+)\b/) || text.match(/\b(\d+)\s+(?:last|past|recent)\b/);
+  const count = countMatch ? Math.min(Number(countMatch[1]), 50) : null;
+  const asksPastTasks = /\b(past|overdue|late|missed)\b/.test(text);
+
+  if (count && /\b(pending|incomplete|remaining)\b/.test(text) && /\b(show|list|display|view)\b/.test(text) && /\b(task|tasks|todo|todos)\b/.test(text)) {
+    return {
+      toolName: 'get_tasks',
+      args: asksPastTasks
+        ? { filter: 'overdue', sort: 'due', limit: count }
+        : { filter: 'pending', sort: 'recent', limit: count }
+    };
+  }
+
+  if (count && /\b(delete|remove|clear)\b/.test(text) && /\b(pending|incomplete|remaining)\b/.test(text) && /\b(task|tasks|todo|todos)\b/.test(text)) {
+    return {
+      toolName: 'bulk_delete_tasks',
+      args: asksPastTasks
+        ? { filter: 'overdue', sort: 'due', limit: count }
+        : { filter: 'pending', sort: 'recent', limit: count }
+    };
+  }
+
+  if (asksPastTasks && /\b(task|tasks|todo|todos)\b/.test(text)) {
     return {
       toolName: 'get_tasks',
       args: { filter: 'overdue' }
+    };
+  }
+
+  if (/\b(telegram|integrations?|profile)\b/.test(text) && /\b(linked|connected|status|confirm|check)\b/.test(text)) {
+    return {
+      toolName: 'telegram_status',
+      args: {}
     };
   }
 

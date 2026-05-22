@@ -6,6 +6,20 @@ const { Telegraf } = require('telegraf');
  */
 
 let bot = null;
+let pollingHandlersRegistered = false;
+
+function registerPollingHandlers(telegrafBot) {
+  if (pollingHandlersRegistered) return;
+
+  telegrafBot.on('message', (ctx) => {
+    const TelegramController = require('../controllers/telegram.controller');
+    TelegramController._processUpdate(ctx.update).catch((error) => {
+      console.error('Error processing Telegram polling update:', error);
+    });
+  });
+
+  pollingHandlersRegistered = true;
+}
 
 /**
  * Initialize Telegraf bot
@@ -43,7 +57,10 @@ function initializeTelegramBot() {
       'For production, set TELEGRAM_WEBHOOK_URL in .env file.'
     );
     // Fallback to polling mode for development
-    bot.launch().then(() => {
+    registerPollingHandlers(bot);
+    bot.telegram.deleteWebhook().catch((error) => {
+      console.warn('Failed to clear Telegram webhook before polling:', error.message);
+    }).then(() => bot.launch()).then(() => {
       console.log('✅ Telegram bot started (polling mode - development only)');
     }).catch((error) => {
       console.error('❌ Failed to start Telegram bot:', error.message);
@@ -63,17 +80,13 @@ function initializeTelegramBot() {
 
   // Optional: Enable graceful shutdown
   process.once('SIGINT', () => {
-    if (webhookUrl) {
-      console.log('Shutting down Telegram bot...');
-      bot.stop('SIGINT');
-    }
+    console.log('Shutting down Telegram bot...');
+    bot.stop('SIGINT');
   });
 
   process.once('SIGTERM', () => {
-    if (webhookUrl) {
-      console.log('Shutting down Telegram bot...');
-      bot.stop('SIGTERM');
-    }
+    console.log('Shutting down Telegram bot...');
+    bot.stop('SIGTERM');
   });
 
   return bot;

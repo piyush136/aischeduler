@@ -29,9 +29,9 @@ Core behavior:
 
 Intent coverage:
 - Create/schedule: add_task for one task, add_multiple_tasks for a list, create_plan for a generated multi-day plan.
-- Read/search: get_tasks for filtered task lists, search_tasks for named searches, get_team_tasks for team-specific lists, list_events for calendar/schedule views, list_reminders for reminders, list_notifications for inbox/unread/team invite requests.
+- Read/search: get_tasks for filtered task lists, search_tasks for named searches, get_team_tasks for team-specific lists, list_events for calendar/schedule views, list_reminders for reminders, list_notifications for inbox/unread/team invite requests, telegram_status for Telegram integration link status.
 - Change: update_task for one named task, update_multiple_tasks for several known tasks, postpone_task for moving/rescheduling, pin_task for pin/unpin, update_subtask for subtask status.
-- Remove: delete_task for tasks, delete_subtask for subtasks, delete_team/remove_team_member for team management.
+- Remove: delete_task for one task, bulk_delete_tasks for bounded requests like "delete last 10 pending tasks", delete_subtask for subtasks, delete_team/remove_team_member for team management.
 - Copy/move/share: copy_task for copying personal tasks to a team or team tasks to personal tasks. Use update_task with team_id/assigned_to only when the user wants to move/reassign the existing task instead of copying it.
 - Invites/inbox: respond_team_invite to accept or reject pending team invitations. Use list_notifications first if the invite is unclear.
 - Reminders/calendar/weather: set_reminder, sync_calendar, disconnect_calendar, find_free_slots, get_weather.
@@ -41,6 +41,10 @@ Task handling:
 - Create one task with add_task, or multiple tasks with add_multiple_tasks.
 - For subtasks, prefer add_task with subtasks when creating a new complex task, or add_subtask for an existing task.
 - For update, delete, postpone, and pin actions, prefer passing query directly to the tool unless you already have the exact task_id.
+- For "show/list last N pending tasks", use get_tasks with filter "pending", sort "recent", and limit N.
+- For "delete last N pending tasks", use bulk_delete_tasks with filter "pending", sort "recent", and limit N.
+- For "delete past N pending/incomplete tasks", use bulk_delete_tasks with filter "overdue", sort "due", and limit N.
+- For Telegram/profile integration status questions, use telegram_status.
 - update_task can change title, due_at, status, priority, recurrence, team assignment, and assignees.
 - Treat "bring/move/shift tasks to today" as rescheduling. For one named task, use update_task or postpone_task with due_at/new_date "today". For several named tasks, use update_multiple_tasks with updates.due_at "today".
 - For requests like "bring the 5 recent tasks to today", first call get_tasks with filter "recent" and limit 5, then call update_multiple_tasks with the returned task titles or IDs and updates.due_at "today".
@@ -102,6 +106,29 @@ function formatAmbiguousMatches(result) {
   return `I found multiple matches:\n${lines.join('\n')}\nWhich one should I use?`;
 }
 
+function formatTaskLine(task, index) {
+  const due = task.due_at ? `, due ${new Date(task.due_at).toLocaleString()}` : '';
+  return `${index + 1}. ${task.title || 'Untitled task'}${due}`;
+}
+
+function formatTaskList(result) {
+  const tasks = Array.isArray(result?.tasks) ? result.tasks : [];
+  if (!tasks.length) return result?.message || 'No tasks found.';
+
+  const lines = tasks.slice(0, 10).map(formatTaskLine);
+  const more = tasks.length > 10 ? `\n...and ${tasks.length - 10} more.` : '';
+  return `${result.message || `Found ${tasks.length} task(s).`}\n${lines.join('\n')}${more}`;
+}
+
+function formatDeletedTasks(result) {
+  const deleted = Array.isArray(result?.deleted) ? result.deleted : [];
+  if (!deleted.length) return result?.message || `Deleted ${result?.deletedCount || 0} task(s).`;
+
+  const lines = deleted.slice(0, 10).map(formatTaskLine);
+  const more = deleted.length > 10 ? `\n...and ${deleted.length - 10} more.` : '';
+  return `${result.message || `Deleted ${deleted.length} task(s).`}\n${lines.join('\n')}${more}`;
+}
+
 function summarizeToolResult(toolName, result) {
   if (!result) return 'I completed the request.';
 
@@ -111,10 +138,6 @@ function summarizeToolResult(toolName, result) {
 
   if (result.success === false) {
     return result.error || result.message || `I couldn't complete ${toolName}.`;
-  }
-
-  if (result.message) {
-    return result.message;
   }
 
   switch (toolName) {
@@ -128,8 +151,20 @@ function summarizeToolResult(toolName, result) {
         return `Created ${result.summary.created || 0} task(s) successfully.`;
       }
       break;
+    case 'bulk_delete_tasks':
+      if (result.preview) {
+        return formatTaskList(result);
+      }
+      return formatDeletedTasks(result);
     case 'get_tasks':
-      return `Found ${result.count || 0} task(s).`;
+      return formatTaskList(result);
+    case 'telegram_status':
+      if (result.linked) {
+        return result.telegram?.telegram_username
+          ? `Telegram is linked as @${result.telegram.telegram_username}.`
+          : 'Telegram is linked.';
+      }
+      return 'Telegram is not linked.';
     case 'find_free_slots':
       return result.slots?.length
         ? `Found ${result.slots.length} free slot(s).`
@@ -146,6 +181,10 @@ function summarizeToolResult(toolName, result) {
       return result.message || 'Task copied successfully.';
     default:
       break;
+  }
+
+  if (result.message) {
+    return result.message;
   }
 
   return 'I completed the request.';

@@ -27,6 +27,11 @@ const getTasks = {
       limit: {
         type: 'number',
         description: 'Optional maximum number of tasks to return, useful for requests like "5 recent tasks".'
+      },
+      sort: {
+        type: 'string',
+        enum: ['smart', 'recent', 'oldest', 'due', 'priority', 'title'],
+        description: 'Optional sort order. Use recent for requests like "last 5 pending tasks".'
       }
     }
   },
@@ -34,6 +39,7 @@ const getTasks = {
     try {
       const { _meta = {} } = args;
       const filter = String(args.filter || 'today').toLowerCase();
+      const sort = String(args.sort || '').toLowerCase();
       const requestedLimit = Number(args.limit);
       const limit = Number.isFinite(requestedLimit) && requestedLimit > 0
         ? Math.min(Math.floor(requestedLimit), 50)
@@ -93,7 +99,22 @@ const getTasks = {
           break;
       }
 
-      if (!preserveOrder) {
+      if (sort === 'recent') {
+        filtered.sort((a, b) => new Date(b.created_at || b.updated_at || 0) - new Date(a.created_at || a.updated_at || 0));
+      } else if (sort === 'oldest') {
+        filtered.sort((a, b) => new Date(a.created_at || a.updated_at || 0) - new Date(b.created_at || b.updated_at || 0));
+      } else if (sort === 'due') {
+        filtered.sort((a, b) => {
+          if (a.due_at && b.due_at) return new Date(a.due_at) - new Date(b.due_at);
+          if (a.due_at) return -1;
+          if (b.due_at) return 1;
+          return new Date(b.created_at || b.updated_at || 0) - new Date(a.created_at || a.updated_at || 0);
+        });
+      } else if (sort === 'priority') {
+        filtered.sort((a, b) => (a.priority || 3) - (b.priority || 3));
+      } else if (sort === 'title') {
+        filtered.sort((a, b) => String(a.title || '').localeCompare(String(b.title || '')));
+      } else if (!preserveOrder) {
         filtered.sort((a, b) => {
           if (a.isPinned && !b.isPinned) return -1;
           if (!a.isPinned && b.isPinned) return 1;
@@ -129,6 +150,7 @@ const getTasks = {
       return {
         success: true,
         filter,
+        sort: sort || (preserveOrder ? 'recent' : 'smart'),
         count: tasks.length,
         tasks,
         message: tasks.length === 0 ? `No ${label} tasks found.` : `Found ${tasks.length} ${label} task${tasks.length === 1 ? '' : 's'}.`,

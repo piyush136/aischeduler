@@ -9,8 +9,7 @@ const telegramUserSchema = new mongoose.Schema({
   },
   telegram_id: {
     type: String,
-    required: true,
-    unique: true
+    default: null
   },
   telegram_username: {
     type: String,
@@ -18,8 +17,7 @@ const telegramUserSchema = new mongoose.Schema({
   },
   linking_code: {
     type: String,
-    default: null,
-    sparse: true
+    default: null
   },
   is_linked: {
     type: Boolean,
@@ -50,8 +48,9 @@ telegramUserSchema.index(
   }
 );
 
-// Indexes for lookups
-// Note: telegram_id already has unique index from schema definition
+// Indexes for lookups. Pending web-link records use an internal pending:* ID
+// so this stays compatible with databases that already have telegram_id_1.
+telegramUserSchema.index({ telegram_id: 1 }, { unique: true });
 telegramUserSchema.index({ user_id: 1 });
 telegramUserSchema.index({ linking_code: 1 }, { sparse: true });
 telegramUserSchema.index({ is_linked: 1 });

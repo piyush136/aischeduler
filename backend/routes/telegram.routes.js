@@ -11,6 +11,18 @@ const authMiddleware = require('../middleware/auth.middleware');
 router.post('/link-code', authMiddleware, TelegramController.generateLinkingCode);
 
 /**
+ * GET /telegram/status
+ * Get Telegram linking status for the authenticated user
+ */
+router.get('/status', authMiddleware, TelegramController.getLinkStatus);
+
+/**
+ * DELETE /telegram/link
+ * Unlink Telegram from the authenticated user
+ */
+router.delete('/link', authMiddleware, TelegramController.unlinkAccount);
+
+/**
  * POST /telegram/webhook
  * Receive Telegram webhook updates
  * Called by Telegram servers

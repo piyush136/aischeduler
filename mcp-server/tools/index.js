@@ -5,6 +5,7 @@ const createComplexTask = require('./createComplexTask.tool');
 const addSubtask = require('./addSubtask.tool');
 const updateSubtask = require('./updateSubtask.tool');
 const updateMultipleTasks = require('./updateMultipleTasks.tool');
+const bulkDeleteTasks = require('./bulkDeleteTasks.tool');
 const deleteSubtask = require('./deleteSubtask.tool');
 
 // New personal tools
@@ -18,6 +19,7 @@ const disconnectCalendar = require('./disconnectCalendar.tool');
 const copyTask = require('./copyTask.tool');
 const listNotifications = require('./listNotifications.tool');
 const respondTeamInvite = require('./respondTeamInvite.tool');
+const telegramStatus = require('./telegramStatus.tool');
 
 // Team tools
 const createTeam = require('./createTeam.tool');
@@ -38,6 +40,7 @@ const tools = [
   require('./searchTasks.tool'),
   require('./listEvents.tool'),
   require('./deleteTask.tool'),
+  bulkDeleteTasks,
   require('./updateTask.tool'),
   require('./findFreeSlots.tool'),
   require('./getWeather.tool'),
@@ -57,6 +60,7 @@ const tools = [
   copyTask,
   listNotifications,
   respondTeamInvite,
+  telegramStatus,
   // Team tools
   createTeam,
   listTeams,
