@@ -26,6 +26,10 @@ const userSchema = new mongoose.Schema({
   phone: {
     type: String,
     default: null
+  },
+  telegram_id: {
+    type: String,
+    default: null
   }
 }, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
 

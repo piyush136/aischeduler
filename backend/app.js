@@ -4,6 +4,10 @@ const connectDB = require('./config/db');
 
 // Connect to Database
 connectDB();
+
+// Initialize Telegram Bot (if token is set in .env)
+require('./config/telegram');
+
 const taskRoutes = require('./routes/task.routes');
 // const routineRoutes = require('./routes/routine.routes');
 
@@ -24,6 +28,7 @@ app.use('/calendar', require('./routes/calendar.routes'));
 app.use('/teams', require('./routes/team.routes'));
 app.use('/notifications', require('./routes/notification.routes'));
 app.use('/reminders', require('./routes/reminder.routes'));
+app.use('/telegram', require('./routes/telegram.routes')); // Telegram bot routes
 
 
 app.get('/', (req, res) => {

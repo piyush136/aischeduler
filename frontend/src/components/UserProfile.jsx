@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { User, Mail, Phone, Calendar, SwitchCamera, Save, X, Lock, Shield, Image as ImageIcon } from 'lucide-react';
+import { User, Mail, Phone, Calendar, SwitchCamera, Save, X, Lock, Shield, Image as ImageIcon, Zap } from 'lucide-react';
 import { apiUrl } from '../config/api';
+import TelegramConnect from './TelegramConnect';
 
 export default function UserProfile({ token, onProfileUpdate }) {
     const [activeTab, setActiveTab] = useState('view'); // 'view', 'edit', 'password'
@@ -137,6 +138,7 @@ export default function UserProfile({ token, onProfileUpdate }) {
             <div className="flex gap-2 overflow-x-auto border-b border-slate-100 p-3 sm:p-4">
                 <TabButton id="view" label="Profile" icon={User} />
                 <TabButton id="edit" label="Edit Profile" icon={Save} />
+                <TabButton id="integrations" label="Integrations" icon={Zap} />
                 {!profileData.google_tokens && <TabButton id="password" label="Security" icon={Lock} />}
             </div>
 
@@ -218,6 +220,16 @@ export default function UserProfile({ token, onProfileUpdate }) {
                            <button type="button" onClick={() => setActiveTab('view')} className="rounded-xl bg-slate-100 px-6 py-2 font-semibold text-slate-700 transition-colors hover:bg-slate-200">Cancel</button>
                        </div>
                     </form>
+                )}
+
+                {activeTab === 'integrations' && (
+                    <div className="max-w-2xl space-y-6">
+                        <TelegramConnect token={token} onLinked={() => {
+                            fetchProfile();
+                            setMessage('✅ Telegram account linked successfully!');
+                            setTimeout(() => setMessage(''), 3000);
+                        }} />
+                    </div>
                 )}
             </div>
         </div>
