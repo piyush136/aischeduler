@@ -22,9 +22,9 @@ const VARIANT_STYLES = {
   },
   info: {
     icon: Info,
-    iconClass: 'bg-indigo-100 text-indigo-600',
-    accentClass: 'from-indigo-500 to-violet-500',
-    confirmClass: 'bg-indigo-600 hover:bg-indigo-500 text-white'
+    iconClass: 'bg-aurora-100 text-aurora-600',
+    accentClass: 'from-aurora-500 to-violet-500',
+    confirmClass: 'bg-aurora-600 hover:bg-aurora-500 text-white'
   }
 };
 

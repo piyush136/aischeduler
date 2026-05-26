@@ -90,7 +90,7 @@ export default function InboxView({ token, onOpenNotification }) {
   const getTypeIcon = (type) => {
     switch (type) {
       case 'task_assigned':
-        return <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0"><ArrowRight size={18} className="text-indigo-600" /></div>;
+        return <div className="w-10 h-10 bg-aurora-100 rounded-full flex items-center justify-center flex-shrink-0"><ArrowRight size={18} className="text-aurora-600" /></div>;
       case 'comment':
         return <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0"><Bell size={18} className="text-blue-600" /></div>;
       case 'mention':
@@ -107,7 +107,7 @@ export default function InboxView({ token, onOpenNotification }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="w-8 h-8 border-3 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-3 border-aurora-200 border-t-aurora-600 rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -123,8 +123,8 @@ export default function InboxView({ token, onOpenNotification }) {
 
       {notifications.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 opacity-60">
-          <div className="w-24 h-24 bg-indigo-50 rounded-full flex items-center justify-center mb-4">
-            <Bell size={40} className="text-indigo-300" />
+          <div className="w-24 h-24 bg-aurora-50 rounded-full flex items-center justify-center mb-4">
+            <Bell size={40} className="text-aurora-300" />
           </div>
           <p className="text-slate-500 font-medium text-lg mb-1">All caught up!</p>
           <p className="text-slate-400 text-sm">No notifications yet</p>
@@ -138,12 +138,12 @@ export default function InboxView({ token, onOpenNotification }) {
               className={`flex w-full flex-col gap-3 rounded-xl border p-4 text-left transition-all duration-200 sm:flex-row sm:items-center sm:gap-4 ${
                 notif.is_read
                   ? 'bg-white border-slate-100 opacity-60'
-                  : 'cursor-pointer bg-white border-indigo-100 shadow-sm hover:shadow-md hover:border-indigo-200 hover:-translate-y-0.5'
+                  : 'cursor-pointer bg-white border-aurora-100 shadow-sm hover:shadow-md hover:border-aurora-200 hover:-translate-y-0.5'
               }`}
             >
               {/* Unread dot */}
               {!notif.is_read && (
-                <span className="w-2.5 h-2.5 bg-indigo-500 rounded-full flex-shrink-0 animate-pulse"></span>
+                <span className="w-2.5 h-2.5 bg-aurora-500 rounded-full flex-shrink-0 animate-pulse"></span>
               )}
 
               {/* Type Icon */}
@@ -168,7 +168,7 @@ export default function InboxView({ token, onOpenNotification }) {
                     </span>
                   )}
                   {notif.task_id && (
-                    <span className="text-xs text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-lg font-medium truncate max-w-[150px]">
+                    <span className="text-xs text-aurora-500 bg-aurora-50 px-2 py-0.5 rounded-lg font-medium truncate max-w-[150px]">
                       {notif.task_id.title || 'Task'}
                     </span>
                   )}

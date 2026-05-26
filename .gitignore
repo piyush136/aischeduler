@@ -32,3 +32,5 @@ dist/
 build/
 *.tsbuildinfo
 
+#forntend nextjs
+frontend-nextjs/

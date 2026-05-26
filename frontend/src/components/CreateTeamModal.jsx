@@ -42,16 +42,16 @@ export default function CreateTeamModal({ isOpen, onClose, onTeamCreated, token 
   };
 
   return (
-    <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50 p-3 backdrop-blur-sm">
-      <div className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white shadow-2xl transition-all animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-950/45 p-3 backdrop-blur-sm">
+      <div className="w-full max-w-md transform overflow-hidden rounded-[24px] border border-white/60 bg-white/72 shadow-[0_35px_120px_rgba(15,23,42,0.28)] backdrop-blur-2xl transition-all animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="flex items-center justify-between gap-3 bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-4 sm:px-6 sm:py-5">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+        <div className="flex items-center justify-between gap-3 bg-aurora-gradient px-4 py-4 sm:px-6 sm:py-5 text-white">
+          <h2 className="text-lg font-semibold text-white flex items-center gap-2">
             <Users size={20} />
             Create New Team
           </h2>
-          <button onClick={onClose} className="text-white/70 hover:text-white transition-colors">
-            <X size={20} />
+          <button onClick={onClose} className="rounded-xl p-1.5 text-white/75 hover:bg-white/10 hover:text-white transition-colors">
+            <X size={18} />
           </button>
         </div>
 
@@ -64,13 +64,13 @@ export default function CreateTeamModal({ isOpen, onClose, onTeamCreated, token 
               value={name}
               onChange={e => setName(e.target.value)}
               placeholder="e.g., Marketing Team, Dev Squad..."
-              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-slate-800 placeholder-slate-400 transition-all"
+              className="premium-input"
               required
             />
           </div>
 
           {error && (
-            <div className="px-4 py-3 bg-rose-50 border border-rose-200 text-rose-600 text-sm rounded-xl">
+            <div className="px-4 py-3 bg-rosefire-100/60 border border-rosefire-100 text-rosefire-75 text-sm rounded-xl font-medium">
               {error}
             </div>
           )}
@@ -79,14 +79,14 @@ export default function CreateTeamModal({ isOpen, onClose, onTeamCreated, token 
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 text-slate-600 hover:bg-slate-100 rounded-xl text-sm font-medium transition-colors"
+              className="min-h-11 px-5 py-2.5 text-slate-600 hover:bg-white rounded-xl text-sm font-semibold transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading || !name.trim()}
-              className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl shadow-lg shadow-indigo-200 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50 text-sm font-semibold transition-all transform active:scale-95"
+              className="min-h-11 px-6 py-2.5 bg-aurora-gradient text-white rounded-xl shadow-lg disabled:opacity-50 text-sm font-semibold transition-all transform active:scale-95 hover-glow"
             >
               {loading ? 'Creating...' : 'Create Team'}
             </button>

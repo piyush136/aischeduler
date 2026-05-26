@@ -433,7 +433,7 @@ export default function TeamWorkspace({ token, team, user, initialMessageTarget,
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="w-8 h-8 border-3 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-3 border-aurora-200 border-t-aurora-600 rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -652,7 +652,7 @@ export default function TeamWorkspace({ token, team, user, initialMessageTarget,
         </button>
         <div className="w-full min-w-0 flex-1 sm:w-auto">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-lg font-bold text-white shadow-lg shadow-indigo-200/50">
+            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-aurora-gradient text-lg font-bold text-white shadow-lg">
               {currentTeamInfo.name.charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0">
@@ -662,7 +662,7 @@ export default function TeamWorkspace({ token, team, user, initialMessageTarget,
                     type="text"
                     value={newTeamName}
                     onChange={(e) => setNewTeamName(e.target.value)}
-                    className="w-full max-w-48 rounded-lg border border-slate-300 px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full max-w-48 rounded-lg border border-slate-300 px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-aurora-300"
                     onKeyPress={(e) => e.key === 'Enter' && handleUpdateName()}
                     autoFocus
                   />
@@ -677,7 +677,7 @@ export default function TeamWorkspace({ token, team, user, initialMessageTarget,
                 <div className="flex min-w-0 items-center gap-2">
                   <h2 className="truncate text-xl font-bold text-slate-800">{currentTeamInfo.name}</h2>
                   {isAdmin && (
-                    <button onClick={() => setIsEditingName(true)} className="text-slate-400 hover:bg-slate-100 hover:text-indigo-600 p-1.5 rounded-lg transition-colors">
+                    <button onClick={() => setIsEditingName(true)} className="text-slate-400 hover:bg-slate-100 hover:text-aurora-600 p-1.5 rounded-lg transition-colors">
                       <Edit2 size={14} />
                     </button>
                   )}
@@ -708,7 +708,7 @@ export default function TeamWorkspace({ token, team, user, initialMessageTarget,
 
         <button
           onClick={() => { setActiveTab('members'); setShowAddMember(true); }}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:border-indigo-200 hover:bg-slate-50 hover:text-indigo-600 active:scale-95 sm:w-auto"
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:border-aurora-200 hover:bg-white hover:text-aurora-600 active:scale-95 sm:w-auto"
         >
           <UserPlus size={16} />
           Add Member
@@ -755,7 +755,7 @@ export default function TeamWorkspace({ token, team, user, initialMessageTarget,
             {canAddTask ? (
               <button
                 onClick={() => onCreateTask(team, members)}
-                className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm shadow-indigo-200 transition-all hover:from-indigo-500 hover:to-violet-500 active:scale-95"
+                className="flex items-center gap-1.5 rounded-lg bg-aurora-gradient px-3 py-1.5 text-sm font-semibold text-white transition-all hover-glow active:scale-95"
               >
                 <Plus size={16} />
                 New Task
@@ -768,7 +768,7 @@ export default function TeamWorkspace({ token, team, user, initialMessageTarget,
             )}
             <button
               onClick={() => setLayoutMode(prev => prev === 'grid' ? 'list' : 'grid')}
-              className="p-1.5 border border-slate-200 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 transition-all shadow-sm bg-white flex items-center justify-center cursor-pointer"
+              className="p-1.5 border border-slate-200 rounded-lg text-slate-500 hover:text-aurora-600 hover:bg-aurora-50 hover:border-aurora-200 transition-all shadow-sm bg-white flex items-center justify-center cursor-pointer"
               title={layoutMode === 'grid' ? "Switch to Stacked View" : "Switch to Grid View"}
             >
               {layoutMode === 'grid' ? <List size={20} /> : <LayoutGrid size={20} />}
@@ -806,8 +806,8 @@ export default function TeamWorkspace({ token, team, user, initialMessageTarget,
 
           {tasks.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 opacity-60">
-              <div className="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mb-4">
-                <Check size={36} className="text-indigo-300" />
+              <div className="w-20 h-20 bg-aurora-50 rounded-full flex items-center justify-center mb-4">
+                <Check size={36} className="text-aurora-300" />
               </div>
               <p className="text-slate-500 font-medium">No tasks yet</p>
               <p className="text-slate-400 text-sm mt-1">Create a task to get started!</p>
@@ -820,7 +820,7 @@ export default function TeamWorkspace({ token, team, user, initialMessageTarget,
                 const completedSubtasks = task.subtasks?.filter(st => st.status === 'completed').length || 0;
                 const comments = task.comments || [];
                 return (
-                <div key={task._id} className={`group relative flex min-w-0 flex-col rounded-xl border border-slate-100/60 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-indigo-100/80 hover:shadow-md ${postponeMenu === task._id ? 'z-[150] overflow-visible' : 'z-10 overflow-hidden'} ${isExpanded ? (layoutMode === 'grid' ? 'col-span-1 md:col-span-2 xl:col-span-2' : '') : ''}`}>
+                <div key={task._id} className={`group relative flex min-w-0 flex-col rounded-[22px] border border-white/70 bg-white/78 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1.5 hover:border-aurora-200 hover:shadow-[0_30px_80px_rgba(146,87,255,0.14)] ${postponeMenu === task._id ? 'z-[150] overflow-visible' : 'z-10 overflow-hidden'} ${isExpanded ? (layoutMode === 'grid' ? 'col-span-1 md:col-span-2 xl:col-span-2' : '') : ''}`}>
                   
                   {/* Task Content Header Row */}
                   <div className="p-4 pb-3 sm:p-5 sm:pb-3">
@@ -829,15 +829,15 @@ export default function TeamWorkspace({ token, team, user, initialMessageTarget,
                       onClick={() => toggleTask(task._id, task.status)}
                       className={`order-1 mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 transition-all ${
                         task.status === 'completed'
-                          ? 'bg-indigo-500 border-indigo-500'
-                          : 'border-slate-300 hover:border-indigo-500'
+                          ? 'bg-aurora-500 border-aurora-500'
+                          : 'border-slate-300 hover:border-aurora-500'
                       }`}
                     >
                       {task.status === 'completed' && <Check size={14} className="text-white" />}
                     </button>
                     <div className="order-3 min-w-0 basis-full">
                       <h3 className={`break-words text-base font-semibold leading-snug text-slate-800 ${task.status === 'completed' ? 'line-through text-slate-400' : ''}`}>
-                        {task.isPinned && <Pin size={12} className="inline mr-1 text-indigo-500 fill-current" />}
+                        {task.isPinned && <Pin size={12} className="inline mr-1 text-aurora-500 fill-current" />}
                         {task.title}
                       </h3>
                     </div>
@@ -858,7 +858,7 @@ export default function TeamWorkspace({ token, team, user, initialMessageTarget,
                         <div className="relative" ref={postponeMenu === task._id ? postponeRef : null}>
                           <button 
                               onClick={() => setPostponeMenu(postponeMenu === task._id ? null : task._id)}
-                              className={`p-1.5 rounded-lg transition-all ${postponeMenu === task._id ? 'text-indigo-600 bg-indigo-50' : 'text-slate-300 hover:text-indigo-500 hover:bg-indigo-50'}`}
+                              className={`p-1.5 rounded-lg transition-all ${postponeMenu === task._id ? 'text-aurora-600 bg-aurora-50' : 'text-slate-300 hover:text-aurora-500 hover:bg-aurora-50'}`}
                               title="Postpone task"
                           >
                               <FastForward size={14} />
@@ -866,26 +866,26 @@ export default function TeamWorkspace({ token, team, user, initialMessageTarget,
                           
                           {/* Postpone Popover */}
                           {postponeMenu === task._id && (
-                            <div className="absolute left-0 top-full z-[200] mt-2 w-56 max-w-[calc(100vw-2rem)] rounded-2xl border border-slate-100 bg-white p-2 shadow-2xl animate-in fade-in slide-in-from-top-2 sm:left-auto sm:right-0" onClick={e => e.stopPropagation()}>
+                            <div className="absolute left-0 top-full z-[200] mt-2 w-56 max-w-[calc(100vw-2rem)] rounded-2xl border border-white/70 bg-white p-2 shadow-2xl animate-in fade-in slide-in-from-top-2 sm:left-auto sm:right-0" onClick={e => e.stopPropagation()}>
                               <div className="px-3 py-2 border-b border-slate-100 mb-1">
                                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Postpone to</p>
                               </div>
                               <div className="flex flex-col gap-1">
-                                <button onClick={() => postponeTask(task._id, getQuickDates().today.toISOString())} className="w-full text-left px-3 py-2 text-sm text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors flex items-center justify-between group/btn">
-                                  <span>Today</span><span className="text-xs text-slate-400 group-hover/btn:text-indigo-400">{format(getQuickDates().today, 'MMM d')}</span>
+                                <button onClick={() => postponeTask(task._id, getQuickDates().today.toISOString())} className="w-full text-left px-3 py-2 text-sm text-slate-600 hover:text-aurora-600 hover:bg-aurora-50 rounded-xl transition-colors flex items-center justify-between group/btn">
+                                  <span>Today</span><span className="text-xs text-slate-400 group-hover/btn:text-aurora-400">{format(getQuickDates().today, 'MMM d')}</span>
                                 </button>
-                                <button onClick={() => postponeTask(task._id, getQuickDates().tomorrow.toISOString())} className="w-full text-left px-3 py-2 text-sm text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors flex items-center justify-between group/btn">
-                                  <span>Tomorrow</span><span className="text-xs text-slate-400 group-hover/btn:text-indigo-400">{format(getQuickDates().tomorrow, 'MMM d')}</span>
+                                <button onClick={() => postponeTask(task._id, getQuickDates().tomorrow.toISOString())} className="w-full text-left px-3 py-2 text-sm text-slate-600 hover:text-aurora-600 hover:bg-aurora-50 rounded-xl transition-colors flex items-center justify-between group/btn">
+                                  <span>Tomorrow</span><span className="text-xs text-slate-400 group-hover/btn:text-aurora-400">{format(getQuickDates().tomorrow, 'MMM d')}</span>
                                 </button>
-                                <button onClick={() => postponeTask(task._id, getQuickDates().nextWeek.toISOString())} className="w-full text-left px-3 py-2 text-sm text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors flex items-center justify-between group/btn">
-                                  <span>Next Week</span><span className="text-xs text-slate-400 group-hover/btn:text-indigo-400">{format(getQuickDates().nextWeek, 'MMM d')}</span>
+                                <button onClick={() => postponeTask(task._id, getQuickDates().nextWeek.toISOString())} className="w-full text-left px-3 py-2 text-sm text-slate-600 hover:text-aurora-600 hover:bg-aurora-50 rounded-xl transition-colors flex items-center justify-between group/btn">
+                                  <span>Next Week</span><span className="text-xs text-slate-400 group-hover/btn:text-aurora-400">{format(getQuickDates().nextWeek, 'MMM d')}</span>
                                 </button>
                                 <div className="h-px bg-slate-100 my-1 relative">
                                   <span className="absolute left-1/2 -translate-x-1/2 -top-2 bg-white px-2 text-[10px] text-slate-300 uppercase font-bold tracking-wider">Or</span>
                                 </div>
                                 <div className="px-2 pt-1 pb-2 flex items-center gap-2">
-                                  <input type="date" value={customPostponeDate} onChange={(e) => setCustomPostponeDate(e.target.value)} className="flex-1 text-sm border-0 bg-slate-50 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 text-slate-600 outline-none" />
-                                  <button onClick={() => customPostponeDate && postponeTask(task._id, new Date(customPostponeDate).toISOString())} disabled={!customPostponeDate} className={`p-1.5 rounded-lg transition-all ${customPostponeDate ? 'bg-indigo-500 text-white hover:bg-indigo-600 shadow-md shadow-indigo-200' : 'bg-slate-100 text-slate-400'}`}>
+                                  <input type="date" value={customPostponeDate} onChange={(e) => setCustomPostponeDate(e.target.value)} className="flex-1 text-sm border-0 bg-slate-50 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-aurora-300 text-slate-600 outline-none" />
+                                  <button onClick={() => customPostponeDate && postponeTask(task._id, new Date(customPostponeDate).toISOString())} disabled={!customPostponeDate} className={`p-1.5 rounded-lg transition-all ${customPostponeDate ? 'bg-aurora-gradient text-white hover-glow' : 'bg-slate-100 text-slate-400'}`}>
                                     <ChevronRight size={16} />
                                   </button>
                                 </div>
@@ -897,7 +897,7 @@ export default function TeamWorkspace({ token, team, user, initialMessageTarget,
                       
                       <button 
                           onClick={() => togglePin(task)}
-                          className={`p-1.5 rounded-lg transition-all ${task.isPinned ? 'text-indigo-600 bg-indigo-50' : 'text-slate-300 hover:text-indigo-500 hover:bg-indigo-50'}`}
+                          className={`p-1.5 rounded-lg transition-all ${task.isPinned ? 'text-aurora-600 bg-aurora-50' : 'text-slate-300 hover:text-aurora-500 hover:bg-aurora-50'}`}
                           title={task.isPinned ? "Unpin task" : "Pin task"}
                       >
                           <Pin size={14} className={task.isPinned ? "fill-current" : ""} />
@@ -914,7 +914,7 @@ export default function TeamWorkspace({ token, team, user, initialMessageTarget,
                       {onEditTask && canEditTask ? (
                         <button
                           onClick={() => onEditTask(task, team, members)}
-                          className="p-1.5 rounded-lg transition-all text-slate-300 hover:text-indigo-500 hover:bg-indigo-50"
+                          className="p-1.5 rounded-lg transition-all text-slate-300 hover:text-aurora-500 hover:bg-aurora-50"
                           title="Edit task"
                         >
                           <Edit2 size={14} />
@@ -961,7 +961,7 @@ export default function TeamWorkspace({ token, team, user, initialMessageTarget,
 
                   {/* Expanded Content - Sub-tasks */}
                   {isExpanded && (
-                    <div className="mt-auto space-y-3 rounded-b-xl border-t bg-slate-50/50 px-4 pb-4 pt-4 sm:px-5">
+                    <div className="mt-auto space-y-3 rounded-b-[22px] border-t border-white/60 bg-slate-50/50 px-4 pb-4 pt-4 sm:px-5">
                       
                       {/* Sub-tasks List */}
                       {subtaskCount > 0 && (
@@ -969,7 +969,7 @@ export default function TeamWorkspace({ token, team, user, initialMessageTarget,
                           <div className="flex items-center justify-between gap-3">
                             <h4 className="text-sm font-semibold text-slate-700">Sub-tasks ({completedSubtasks}/{subtaskCount})</h4>
                             <div className="w-12 h-1 bg-slate-200 rounded-full overflow-hidden">
-                              <div className="h-full bg-indigo-500 rounded-full transition-all duration-300" style={{width: `${subtaskCount ? (completedSubtasks/subtaskCount)*100 : 0}%`}}></div>
+                              <div className="h-full bg-aurora-500 rounded-full transition-all duration-300" style={{width: `${subtaskCount ? (completedSubtasks/subtaskCount)*100 : 0}%`}}></div>
                             </div>
                           </div>
                           
@@ -1005,11 +1005,11 @@ export default function TeamWorkspace({ token, team, user, initialMessageTarget,
                           onChange={(e) => setNewSubtaskTitle(e.target.value)}
                           onKeyPress={(e) => e.key === 'Enter' && addSubtask(task._id)}
                           placeholder="Add a sub-task..."
-                          className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-aurora-300"
                         />
                         <button
                           onClick={() => addSubtask(task._id)}
-                          className="px-3 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition flex items-center justify-center"
+                          className="px-3 py-2 bg-aurora-gradient text-white rounded-lg transition flex items-center justify-center hover-glow"
                           title="Add sub-task"
                           disabled={!newSubtaskTitle.trim() || expandedTask !== task._id}
                         >
@@ -1021,7 +1021,7 @@ export default function TeamWorkspace({ token, team, user, initialMessageTarget,
                       <div className="space-y-3 border-t border-slate-100 pt-3">
                         <div className="flex items-center justify-between gap-3">
                           <h4 className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                            <MessageSquare size={14} className="text-indigo-500" />
+                            <MessageSquare size={14} className="text-aurora-500" />
                             Comments ({comments.length})
                           </h4>
                         </div>
@@ -1037,7 +1037,7 @@ export default function TeamWorkspace({ token, team, user, initialMessageTarget,
                                 <div key={comment._id} className="rounded-xl border border-slate-100 bg-white p-3 shadow-sm">
                                   <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
                                     <div className="flex min-w-0 items-center gap-2">
-                                      <div className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg text-xs font-bold ${isMine ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                                      <div className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg text-xs font-bold ${isMine ? 'bg-aurora-gradient text-white' : 'bg-slate-100 text-slate-500'}`}>
                                         {commenterName.charAt(0).toUpperCase()}
                                       </div>
                                       <span className="truncate text-xs font-bold text-slate-700">{isMine ? 'You' : commenterName}</span>
@@ -1063,12 +1063,12 @@ export default function TeamWorkspace({ token, team, user, initialMessageTarget,
                             onKeyDown={(e) => e.key === 'Enter' && addComment(task._id)}
                             placeholder="Write a comment for this task..."
                             maxLength={2000}
-                            className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
+                            className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-aurora-300 focus:ring-2 focus:ring-aurora-100"
                           />
                           <button
                             onClick={() => addComment(task._id)}
                             disabled={!String(commentDrafts[task._id] || '').trim() || commentSending === task._id}
-                            className="flex items-center justify-center gap-2 rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-indigo-600 disabled:bg-slate-200 disabled:text-slate-400"
+                            className="flex items-center justify-center gap-2 rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-aurora-600 disabled:bg-slate-200 disabled:text-slate-400"
                             title="Add comment"
                           >
                             {commentSending === task._id ? (
@@ -1119,21 +1119,20 @@ export default function TeamWorkspace({ token, team, user, initialMessageTarget,
                 />
               </div>
             </div>
-
             <div className="max-h-52 space-y-1 overflow-y-auto p-2 lg:h-[calc(100vh-410px)] lg:min-h-[240px] lg:max-h-[330px]">
               <button
                 type="button"
                 onClick={handleSelectTeamChat}
                 className={`group mb-2 flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-all ${
                   isTeamChatSelected
-                    ? 'bg-white text-slate-900 shadow-sm ring-1 ring-indigo-100'
+                    ? 'bg-white text-slate-900 shadow-sm ring-1 ring-aurora-100'
                     : 'text-slate-700 hover:bg-white hover:shadow-sm'
                 }`}
               >
                 <div className={`relative flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl text-sm font-bold transition-all ${
                   isTeamChatSelected
-                    ? 'bg-slate-900 text-white shadow-md shadow-slate-200'
-                    : 'bg-white text-slate-500 ring-1 ring-slate-100 group-hover:text-indigo-600'
+                    ? 'bg-slate-900 text-white shadow-md'
+                    : 'bg-white text-slate-500 ring-1 ring-slate-100 group-hover:text-aurora-600'
                 }`}>
                   <Users size={18} />
                   <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white bg-emerald-400"></span>
@@ -1141,11 +1140,11 @@ export default function TeamWorkspace({ token, team, user, initialMessageTarget,
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <p className="truncate text-sm font-bold">Team Chat</p>
-                    <span className="rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10px] font-bold text-indigo-600">Group</span>
+                    <span className="rounded-full bg-aurora-50 px-1.5 py-0.5 text-[10px] font-bold text-aurora-600">Group</span>
                   </div>
                   <p className="truncate text-xs font-medium text-slate-400">Everyone in {currentTeamInfo.name}</p>
                 </div>
-                <ChevronRight size={16} className={isTeamChatSelected ? 'text-indigo-500' : 'text-slate-300 group-hover:text-indigo-400'} />
+                <ChevronRight size={16} className={isTeamChatSelected ? 'text-aurora-500' : 'text-slate-300 group-hover:text-aurora-400'} />
               </button>
 
               {messageMembers.length === 0 ? (
@@ -1175,7 +1174,7 @@ export default function TeamWorkspace({ token, team, user, initialMessageTarget,
                       disabled={isPending}
                       className={`group flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-all ${
                         isSelected
-                          ? 'bg-white text-slate-900 shadow-sm ring-1 ring-indigo-100'
+                          ? 'bg-white text-slate-900 shadow-sm ring-1 ring-aurora-100'
                           : isPending
                             ? 'cursor-not-allowed opacity-60'
                             : 'text-slate-700 hover:bg-white hover:shadow-sm'
@@ -1183,8 +1182,8 @@ export default function TeamWorkspace({ token, team, user, initialMessageTarget,
                     >
                       <div className={`relative flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl text-sm font-bold transition-all ${
                         isSelected
-                          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200'
-                          : 'bg-white text-slate-500 ring-1 ring-slate-100 group-hover:text-indigo-600'
+                          ? 'bg-aurora-gradient text-white shadow-md'
+                          : 'bg-white text-slate-500 ring-1 ring-slate-100 group-hover:text-aurora-600'
                       }`}>
                         {displayName.charAt(0).toUpperCase()}
                         <span className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white ${isPending ? 'bg-slate-300' : 'bg-emerald-400'}`}></span>
@@ -1198,7 +1197,7 @@ export default function TeamWorkspace({ token, team, user, initialMessageTarget,
                         </div>
                         <p className="truncate text-xs font-medium text-slate-400">{isPending ? 'Pending invite' : member.email}</p>
                       </div>
-                      {!isPending && <ChevronRight size={16} className={isSelected ? 'text-indigo-500' : 'text-slate-300 group-hover:text-indigo-400'} />}
+                      {!isPending && <ChevronRight size={16} className={isSelected ? 'text-aurora-500' : 'text-slate-300 group-hover:text-aurora-400'} />}
                     </button>
                   );
                 })
@@ -1210,7 +1209,7 @@ export default function TeamWorkspace({ token, team, user, initialMessageTarget,
             <div className="flex min-h-14 items-center justify-between gap-3 border-b border-slate-100 bg-white/95 px-4 py-2">
               {selectedMessageMember ? (
                 <div className="flex min-w-0 items-center gap-3">
-                  <div className={`relative flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white shadow-lg ${isTeamChatSelected ? 'bg-slate-900 shadow-slate-100' : 'bg-gradient-to-br from-indigo-600 to-teal-500 shadow-indigo-100'}`}>
+                  <div className={`relative flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white shadow-lg ${isTeamChatSelected ? 'bg-slate-900' : 'bg-aurora-gradient'}`}>
                     {isTeamChatSelected ? <Users size={17} /> : (selectedMessageMember.name || selectedMessageMember.email || '?').charAt(0).toUpperCase()}
                     <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white bg-emerald-400"></span>
                   </div>
@@ -1235,7 +1234,7 @@ export default function TeamWorkspace({ token, team, user, initialMessageTarget,
               <button
                 onClick={() => fetchMessages()}
                 disabled={messagesLoading || !selectedMessageMember}
-                className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-all hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600 disabled:opacity-50"
+                className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-all hover:border-aurora-200 hover:bg-aurora-50 hover:text-aurora-600 disabled:opacity-50"
                 title="Refresh messages"
               >
                 <RefreshCw size={16} className={messagesLoading ? 'animate-spin' : ''} />
@@ -1252,7 +1251,7 @@ export default function TeamWorkspace({ token, team, user, initialMessageTarget,
                 </div>
               ) : messagesLoading && messages.length === 0 ? (
                 <div className="flex h-full items-center justify-center">
-                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-200 border-t-indigo-600"></div>
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-aurora-200 border-t-aurora-600"></div>
                 </div>
               ) : messages.length === 0 ? (
                 <div className="flex h-full flex-col items-center justify-center text-center">
@@ -1278,13 +1277,13 @@ export default function TeamWorkspace({ token, team, user, initialMessageTarget,
                         </div>
                       )}
                       <div className={`flex max-w-[88%] flex-col sm:max-w-[68%] ${isMine ? 'items-end' : 'items-start'}`}>
-                        <div className={`mb-1 flex items-center gap-2 text-[11px] font-bold ${isMine ? 'text-indigo-500' : 'text-slate-400'}`}>
+                        <div className={`mb-1 flex items-center gap-2 text-[11px] font-bold ${isMine ? 'text-aurora-500' : 'text-slate-400'}`}>
                           <span>{senderLabel}</span>
                           <span className="font-medium">{message.created_at ? format(parseISO(message.created_at), 'h:mm a') : ''}</span>
                         </div>
                         <div className={`whitespace-pre-wrap break-words px-4 py-3 text-sm leading-relaxed shadow-sm ${
                           isMine
-                            ? 'rounded-2xl rounded-br-md bg-indigo-600 text-white shadow-indigo-100'
+                            ? 'rounded-2xl rounded-br-md bg-aurora-gradient text-white'
                             : 'rounded-2xl rounded-bl-md border border-white bg-white text-slate-700'
                         }`}>
                           {message.body}
@@ -1301,7 +1300,7 @@ export default function TeamWorkspace({ token, team, user, initialMessageTarget,
               {messagesError && (
                 <p className="mb-2 rounded-xl bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-600">{messagesError}</p>
               )}
-              <div className="flex items-end gap-2 rounded-xl border border-slate-200 bg-slate-50 p-1.5 transition focus-within:border-indigo-200 focus-within:bg-white focus-within:ring-4 focus-within:ring-indigo-50">
+              <div className="flex items-end gap-2 rounded-xl border border-slate-200 bg-slate-50 p-1.5 transition focus-within:border-aurora-200 focus-within:bg-white focus-within:ring-4 focus-within:ring-aurora-50">
                 <textarea
                   value={messageDraft}
                   onChange={(e) => setMessageDraft(e.target.value)}
@@ -1320,7 +1319,7 @@ export default function TeamWorkspace({ token, team, user, initialMessageTarget,
                 <button
                   type="submit"
                   disabled={!messageDraft.trim() || messageSending || !selectedMessageMember}
-                  className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-slate-900 text-white shadow-sm transition-all hover:bg-indigo-600 active:scale-95 disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
+                  className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-slate-900 text-white shadow-sm transition-all hover:bg-aurora-600 active:scale-95 disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
                   title="Send message"
                 >
                   {messageSending ? (
@@ -1342,7 +1341,7 @@ export default function TeamWorkspace({ token, team, user, initialMessageTarget,
           {!showAddMember && (
             <button
               onClick={() => setShowAddMember(true)}
-              className="flex items-center gap-2 px-4 py-2.5 border-2 border-dashed border-slate-200 hover:border-indigo-400 text-slate-500 hover:text-indigo-600 rounded-xl text-sm font-medium transition-all hover:bg-indigo-50/50"
+              className="flex items-center gap-2 px-4 py-2.5 border-2 border-dashed border-slate-200 hover:border-aurora-400 text-slate-500 hover:text-aurora-600 rounded-xl text-sm font-semibold transition-all hover:bg-aurora-50/50"
             >
               <UserPlus size={16} />
               Add Member
@@ -1367,14 +1366,14 @@ export default function TeamWorkspace({ token, team, user, initialMessageTarget,
                     value={memberEmail}
                     onChange={e => setMemberEmail(e.target.value)}
                     placeholder="member@example.com"
-                    className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm"
+                    className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-aurora-300 focus:border-aurora-300 outline-none text-sm"
                     required
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={addMemberLoading}
-                  className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-500 disabled:opacity-50"
+                  className="rounded-xl bg-aurora-gradient px-4 py-2 text-sm font-semibold text-white transition-colors hover-glow disabled:opacity-50"
                 >
                   {addMemberLoading ? 'Adding...' : 'Add'}
                 </button>
@@ -1390,7 +1389,7 @@ export default function TeamWorkspace({ token, team, user, initialMessageTarget,
             {members.map(member => (
               <div key={member._id} className="rounded-xl border border-slate-100 bg-white p-4 transition-shadow hover:shadow-sm">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 text-sm font-bold text-white">
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-aurora-gradient text-sm font-bold text-white">
                     {member.name ? member.name.charAt(0).toUpperCase() : '?'}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -1426,7 +1425,7 @@ export default function TeamWorkspace({ token, team, user, initialMessageTarget,
                         {canAddTask && (
                           <button
                             onClick={() => onCreateTask(team, members, member.user_id)}
-                            className="px-3 py-1.5 text-xs font-medium bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg transition-colors whitespace-nowrap"
+                            className="px-3 py-1.5 text-xs font-medium bg-aurora-50 text-aurora-600 hover:bg-aurora-100 rounded-lg transition-colors whitespace-nowrap"
                           >
                             Assign Task
                           </button>

@@ -346,8 +346,8 @@ export default function TaskList({ token, view, searchQuery, onTaskUpdate, onAdd
                   onClick={() => toggleTask(task)}
                   className={`order-1 mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200 ${
                       task.status === 'completed' 
-                          ? 'bg-indigo-500 border-indigo-500 scale-95' 
-                          : (task.isGoogleEvent ? 'border-blue-300 hover:border-blue-500 hover:bg-blue-50' : 'border-slate-300 hover:border-indigo-500')
+                          ? 'bg-aurora-500 border-aurora-500 scale-95' 
+                          : (task.isGoogleEvent ? 'border-blue-300 hover:border-blue-500 hover:bg-blue-50' : 'border-slate-300 hover:border-aurora-500')
                   }`}
               >
                   {task.status === 'completed' && <Check size={14} className="text-white" />}
@@ -449,7 +449,7 @@ export default function TaskList({ token, view, searchQuery, onTaskUpdate, onAdd
                               value={customPostponeDate}
                               min={format(new Date(), 'yyyy-MM-dd')}
                               onChange={(e) => setCustomPostponeDate(e.target.value)}
-                              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-aurora-300 focus:border-transparent"
                             />
                             {customPostponeDate && (
                               <button

@@ -22,6 +22,7 @@ app.use('/teams', require('./routes/team.routes'));
 app.use('/notifications', require('./routes/notification.routes'));
 app.use('/reminders', require('./routes/reminder.routes'));
 app.use('/telegram', require('./routes/telegram.routes')); // Telegram bot routes
+app.use('/api/telegram', require('./routes/telegram.routes')); // Frontend production API base fallback
 
 
 app.get('/', (req, res) => {

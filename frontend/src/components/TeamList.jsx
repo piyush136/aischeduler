@@ -35,7 +35,7 @@ export default function TeamList({ token, onSelectTeam }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="w-8 h-8 border-3 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-3 border-aurora-200 border-t-aurora-600 rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -49,7 +49,7 @@ export default function TeamList({ token, onSelectTeam }) {
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-200 transition-all hover:from-indigo-500 hover:to-violet-500 active:scale-95 sm:w-auto"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-aurora-gradient px-5 py-2.5 text-sm font-semibold text-white transition-all hover-glow active:scale-95 sm:w-auto"
         >
           <Plus size={16} />
           Create Team
@@ -59,8 +59,8 @@ export default function TeamList({ token, onSelectTeam }) {
       {/* Team List */}
       {teams.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 opacity-60">
-          <div className="w-24 h-24 bg-indigo-50 rounded-full flex items-center justify-center mb-4">
-            <Users size={40} className="text-indigo-300" />
+          <div className="w-24 h-24 bg-aurora-50 rounded-full flex items-center justify-center mb-4">
+            <Users size={40} className="text-aurora-300" />
           </div>
           <p className="text-slate-500 font-medium text-lg mb-2">No teams yet</p>
           <p className="px-4 text-center text-sm text-slate-400">Create your first team to start collaborating!</p>
@@ -71,14 +71,14 @@ export default function TeamList({ token, onSelectTeam }) {
             <button
               key={team._id}
               onClick={() => onSelectTeam(team)}
-              className="group relative rounded-xl border border-slate-100/60 bg-white p-5 pr-12 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-indigo-200 hover:shadow-lg"
+              className="group relative rounded-[22px] border border-white/70 bg-white/78 p-5 pr-12 text-left shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1.5 hover:border-aurora-200 hover:shadow-[0_30px_80px_rgba(146,87,255,0.14)]"
             >
               {/* Team Avatar */}
-              <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-indigo-200/50 mb-4">
+              <div className="w-12 h-12 bg-aurora-gradient rounded-xl flex items-center justify-center text-white font-bold text-lg mb-4">
                 {team.name.charAt(0).toUpperCase()}
               </div>
 
-              <h3 className="mb-1 break-words text-base font-semibold text-slate-800 transition-colors group-hover:text-indigo-600">
+              <h3 className="mb-1 break-words text-base font-semibold text-slate-800 transition-colors group-hover:text-aurora-600">
                 {team.name}
               </h3>
 
@@ -97,7 +97,7 @@ export default function TeamList({ token, onSelectTeam }) {
               {/* Arrow indicator */}
               <ChevronRight
                 size={18}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 group-hover:text-aurora-500 group-hover:translate-x-1 transition-all"
               />
             </button>
           ))}

@@ -103,7 +103,7 @@ export default function CalendarView({ token, onDeleteTask, onAddTask }) {
                 >
                   {/* Day Number */}
                   <div className={`text-sm font-medium mb-1 md:mb-2 w-6 h-6 md:w-7 md:h-7 flex items-center justify-center rounded-full
-                     ${isDayToday ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'text-slate-700'}
+                     ${isDayToday ? 'bg-aurora-gradient text-white shadow-md shadow-aurora-200' : 'text-slate-700'}
                   `}>
                     {format(day, 'd')}
                   </div>
@@ -111,7 +111,7 @@ export default function CalendarView({ token, onDeleteTask, onAddTask }) {
                   {/* Event Dots/Indicators */}
                   <div className="space-y-0.5 md:space-y-1">
                     {dayEvents.slice(0, 3).map(event => (
-                      <div key={event.id} className="text-[10px] md:text-xs truncate px-1 md:px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100">
+                      <div key={event.id} className="text-[10px] md:text-xs truncate px-1 md:px-1.5 py-0.5 rounded bg-aurora-50 text-aurora-700 border border-aurora-100">
                         {event.title}
                       </div>
                     ))}

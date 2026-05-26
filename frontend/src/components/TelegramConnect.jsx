@@ -3,7 +3,7 @@ import axios from 'axios';
 import { MessageCircle, Copy, CheckCircle, AlertCircle, Loader, Unlink } from 'lucide-react';
 import { apiUrl } from '../config/api';
 
-const TELEGRAM_BOT_USERNAME = (import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'aitaskmanger_bot').replace(/^@/, '');
+const TELEGRAM_BOT_USERNAME = (import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'ai_task_manager_bot').replace(/^@/, '');
 
 export default function TelegramConnect({ token, onLinked }) {
   const [activeStep, setActiveStep] = useState(1); // 1: Generate code, 2: Link instructions
