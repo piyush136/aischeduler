@@ -158,9 +158,15 @@ class TelegramController {
 
       // Route based on command or message
       if (messageText.startsWith('/start')) {
-        await this._handleStartCommand(telegramId);
+        const startPayload = messageText.split(/\s+/)[1];
+        const linkingCode = this._getLinkingCodeFromStartPayload(startPayload);
+        if (linkingCode) {
+          await this._handleLinkCommand(telegramId, telegramUsername, linkingCode);
+        } else {
+          await this._handleStartCommand(telegramId);
+        }
       } else if (messageText.startsWith('/link')) {
-        const linkingCode = messageText.split(' ')[1];
+        const linkingCode = messageText.split(/\s+/)[1];
         await this._handleLinkCommand(telegramId, telegramUsername, linkingCode);
       } else if (messageText.startsWith('/unlink')) {
         await this._handleUnlinkCommand(telegramId);
@@ -175,6 +181,12 @@ class TelegramController {
     } catch (error) {
       console.error('Error processing update:', error);
     }
+  }
+
+  static _getLinkingCodeFromStartPayload(payload) {
+    if (!payload) return null;
+    const match = String(payload).trim().match(/^link_([A-Za-z0-9]+)$/);
+    return match ? match[1].toUpperCase() : null;
   }
 
   /**

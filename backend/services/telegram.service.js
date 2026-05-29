@@ -5,7 +5,7 @@ const User = require('../models/user.model');
 const Task = require('../models/task.model');
 
 function getBotUsername() {
-  return (process.env.TELEGRAM_BOT_USERNAME || 'ai_task_manager_bot').replace(/^@/, '');
+  return (process.env.TELEGRAM_BOT_USERNAME || 'aitaskmanger_bot').replace(/^@/, '');
 }
 
 function escapeMarkdown(value) {

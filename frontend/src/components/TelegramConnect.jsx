@@ -3,7 +3,12 @@ import axios from 'axios';
 import { MessageCircle, Copy, CheckCircle, AlertCircle, Loader, Unlink } from 'lucide-react';
 import { apiUrl } from '../config/api';
 
-const TELEGRAM_BOT_USERNAME = (import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'ai_task_manager_bot').replace(/^@/, '');
+const TELEGRAM_BOT_USERNAME = (import.meta.env.VITE_TELEGRAM_BOT_USERNAME || 'aitaskmanger_bot').replace(/^@/, '');
+
+function buildTelegramLink(code) {
+  const params = code ? `?start=link_${encodeURIComponent(code)}` : '';
+  return `https://t.me/${TELEGRAM_BOT_USERNAME}${params}`;
+}
 
 export default function TelegramConnect({ token, onLinked }) {
   const [activeStep, setActiveStep] = useState(1); // 1: Generate code, 2: Link instructions
@@ -275,14 +280,14 @@ export default function TelegramConnect({ token, onLinked }) {
             >
               Generate New Code
             </button>
-            <button
-              onClick={() => {
-                window.open(`https://t.me/${TELEGRAM_BOT_USERNAME}`, '_blank');
-              }}
-              className="flex-1 rounded-lg bg-sky-600 px-4 py-2 font-medium text-white transition-colors hover:bg-sky-700"
+            <a
+              href={buildTelegramLink(linkingCode)}
+              target="_blank"
+              rel="noreferrer"
+              className="flex-1 rounded-lg bg-sky-600 px-4 py-2 text-center font-medium text-white transition-colors hover:bg-sky-700"
             >
               Open Telegram Bot
-            </button>
+            </a>
           </div>
         </div>
       )}
