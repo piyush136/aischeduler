@@ -138,7 +138,7 @@ class TelegramController {
   static async _processUpdate(update) {
     try {
       // Check if it's a message update
-      if (!update.message) {
+      if (!update?.message) {
         return;
       }
 
