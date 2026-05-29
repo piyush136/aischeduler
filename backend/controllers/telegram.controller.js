@@ -91,12 +91,14 @@ class TelegramController {
       res.status(200).json({ ok: true });
 
       // Process update asynchronously (don't wait for completion)
-      this._processUpdate(update).catch(error => {
+      TelegramController._processUpdate(update).catch(error => {
         console.error('Error processing Telegram update:', error);
       });
     } catch (error) {
       console.error('Error in handleWebhook:', error);
-      return res.status(200).json({ ok: true }); // Still return 200 to Telegram
+      if (!res.headersSent) {
+        return res.status(200).json({ ok: true }); // Still return 200 to Telegram
+      }
     }
   }
 
