@@ -6,6 +6,9 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import CalendarCallback from './pages/CalendarCallback';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
+import DataDeletion from './pages/DataDeletion';
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem('token'));
@@ -55,6 +58,9 @@ function App() {
         <Route path="/" element={token ? <Navigate to="/dashboard" /> : <Landing token={token} />} />
         <Route path="/login" element={!token ? <Login setAuth={setAuth} /> : <Navigate to="/dashboard" />} />
         <Route path="/register" element={!token ? <Register setAuth={setAuth} /> : <Navigate to="/dashboard" />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/terms-of-service" element={<TermsOfService />} />
+        <Route path="/data-deletion" element={<DataDeletion />} />
         <Route path="/calendar/callback" element={<CalendarCallback />} /> 
         <Route path="/dashboard" element={token ? <Dashboard token={token} user={user} logout={() => setAuth(null)} updateUser={updateUserProfile} /> : <Navigate to="/login" />} />
       </Routes>

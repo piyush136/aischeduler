@@ -208,7 +208,12 @@ export default function Landing({ token }) {
             <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-950 text-sm font-bold text-white">A</div>
             <span className="font-medium text-slate-700">AI Personal Task Manager</span>
           </div>
-          <p>© 2024 AI Personal Task Manager. All rights reserved.</p>
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+            <Link to="/privacy-policy" className="transition hover:text-slate-900">Privacy Policy</Link>
+            <Link to="/terms-of-service" className="transition hover:text-slate-900">Terms</Link>
+            <Link to="/data-deletion" className="transition hover:text-slate-900">Data Deletion</Link>
+          </div>
+          <p>© 2026 AI Personal Task Manager. All rights reserved.</p>
         </div>
       </footer>
     </div>
