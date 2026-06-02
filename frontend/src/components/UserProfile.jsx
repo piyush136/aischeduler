@@ -3,6 +3,7 @@ import axios from 'axios';
 import { User, Mail, Phone, Calendar, SwitchCamera, Save, X, Lock, Shield, Image as ImageIcon, Zap } from 'lucide-react';
 import { apiUrl } from '../config/api';
 import TelegramConnect from './TelegramConnect';
+import WhatsAppConnect from './WhatsAppConnect';
 
 export default function UserProfile({ token, onProfileUpdate }) {
     const [activeTab, setActiveTab] = useState('view'); // 'view', 'edit', 'password'
@@ -227,6 +228,11 @@ export default function UserProfile({ token, onProfileUpdate }) {
                         <TelegramConnect token={token} onLinked={() => {
                             fetchProfile();
                             setMessage('✅ Telegram account linked successfully!');
+                            setTimeout(() => setMessage(''), 3000);
+                        }} />
+                        <WhatsAppConnect token={token} onLinked={() => {
+                            fetchProfile();
+                            setMessage('WhatsApp connection updated successfully.');
                             setTimeout(() => setMessage(''), 3000);
                         }} />
                     </div>
