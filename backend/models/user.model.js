@@ -27,6 +27,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  whatsapp_phone: {
+    type: String,
+    default: null
+  },
   telegram_id: {
     type: String,
     default: null

@@ -23,6 +23,8 @@ app.use('/notifications', require('./routes/notification.routes'));
 app.use('/reminders', require('./routes/reminder.routes'));
 app.use('/telegram', require('./routes/telegram.routes')); // Telegram bot routes
 app.use('/api/telegram', require('./routes/telegram.routes')); // Frontend production API base fallback
+app.use('/whatsapp', require('./routes/whatsapp.routes')); // WhatsApp Cloud API routes
+app.use('/api/whatsapp', require('./routes/whatsapp.routes')); // Frontend production API base fallback
 
 
 app.get('/', (req, res) => {
